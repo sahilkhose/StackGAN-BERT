@@ -1,5 +1,5 @@
 # input data and models 
-input/
+input/*
 models/
 
 !input/dataset_check.py
