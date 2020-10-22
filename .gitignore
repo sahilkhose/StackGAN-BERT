@@ -2,6 +2,8 @@
 input/
 models/
 
+!input/dataset_check.py
+
 # data files
 *.csv
 *.pt
