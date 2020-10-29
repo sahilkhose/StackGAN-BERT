@@ -1,8 +1,7 @@
 # input data and models 
-input/*
+input/data/*
 models/
 
-!input/dataset_check.py
 
 # data files
 *.csv
