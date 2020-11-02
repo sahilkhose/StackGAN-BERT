@@ -1,3 +1,15 @@
+"""Test a model and generate submission CSV.
+
+Usage:
+    > python train.py --load_path PATH --name NAME
+    where
+    > PATH is a path to a checkpoint (e.g., save/train/model-01/best.pth.tar)
+    > NAME is a name to identify the train run
+
+Authors:
+    Abhiraj Tiwari (abhirajtiwari@gmail.com)
+    Sahil Khose (sahilkhose18@gmail.com)
+"""
 import config
 import dataset
 import engine

@@ -1,3 +1,9 @@
+"""CUB Dataset class.
+
+Authors:
+    Abhiraj Tiwari (abhirajtiwari@gmail.com)
+    Sahil Khose (sahilkhose18@gmail.com)
+"""
 import config
 
 import cv2
@@ -24,3 +30,7 @@ class CUBDataset:
         image = cv2.imread(os.path.join(config.IMG, data_id + ".png"))
 
         return text_emb, image
+
+
+if __name__ == "__main__":
+    
