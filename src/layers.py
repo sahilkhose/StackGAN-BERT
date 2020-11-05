@@ -44,10 +44,10 @@ class Stage1(nn.Module):
 
         self.inp_ch = self.n_g*8
 
-        self.up1 = UpSample(self.inp_ch, self.inp_ch//2)
-        self.up2 = UpSample(self.inp_ch//2, self.inp_ch//4)
-        self.up3 = UpSample(self.inp_ch//4, self.inp_ch//8)
-        self.up4 = UpSample(self.inp_ch//8, self.inp_ch//16)
+        self.up1 = _upsample(self.inp_ch, self.inp_ch//2)
+        self.up2 = _upsample(self.inp_ch//2, self.inp_ch//4)
+        self.up3 = _upsample(self.inp_ch//4, self.inp_ch//8)
+        self.up4 = _upsample(self.inp_ch//8, self.inp_ch//16)
 
         self.conv_fin = nn.Conv2d(self.inp_ch//16, 3)
 
@@ -59,26 +59,12 @@ class Stage1(nn.Module):
         inp = self.up4(self.up3(self.up2(self.up1(inp))))
         out = self.conv_fin(inp)
         return out
-
-class UpSample(nn.Module):
-    """
-    Upsampling block
-    upsample -> conv2d -> batchnorm -> relu
-    """
-    def __init__(self, in_channels, out_channels):
-        super(UpSample, self).__init__()
-        self.in_ch = in_channels
-        self.out_ch = out_channels
-        self.up = nn.Upsample(scale_factor=2, mode='nearest')
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=True)
-        self.bn = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU()
-    def forward(self, x):
-        x = self.up(x)
-        x = self.conv(x)
-        x = self.bn(x)
-        x = self.relu(x)
-        return x
-        
-
+       
+def _upsample(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
+    return nn.Sequential(
+        nn.Upsample(scale_factor=2, mode='nearest'),
+        nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=True),
+        nn.BatchNorm2d(out_channels),
+        nn.ReLU()
+    )
 
