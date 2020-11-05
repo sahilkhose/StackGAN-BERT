@@ -1,20 +1,18 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-import args
 
 class CAug(nn.Module):
-    def __init__ (self):
+    def __init__ (self, bert_dim=768, n_g=128, device=torch.cuda):
         """
         Module for conditional augmentation
-
-        All the arguments are set via args.py
         """
         super(CAug, self).__init__()
-        self.bert_dim = args.bert_dim
-        self.n_g = args.n_g # This is the dimention of mu
+        self.bert_dim = bert_dim
+        self.n_g = n_g # This is the dimention of mu
         self.ff = nn.Linear(self.bert_dim, self.n_g*2)
         self.relu = nn.ReLU()
+        self.device = device
     def forward(self, x):
         """
         input:
@@ -25,22 +23,22 @@ class CAug(nn.Module):
         enc = self.relu(self.ff(x))
         mu = enc[:,:self.n_g]
         sig = enc[:,self.n_g:]
-        if args.CUDA:
+        if self.device==torch.cuda:
             epsilon = Variable(torch.cuda.FloatTensor(sig.size()).normal_())
         else:
             epsilon = Variable(torch.FloatTensor(sig.size()).normal_())
         c_0 = epsilon * sig + mu
         return c_0
 
-class Stage1(nn.Module):
+class Stage1Generator(nn.Module):
     """
     Stage 1 generator
     """
-    def __init__(self):
-        super(Stage1, self).__init__()
-        self.n_g = args.n_g
-        self.n_z = args.n_z
-        self.ff = nn.Linear(self.n_g+self.n_z, self.n_g*8*4*4)
+    def __init__(self, n_g=128, n_z=100):
+        super(Stage1Generator, self).__init__()
+        self.n_g = n_g
+        self.n_z = n_z
+        self.ff = nn.Linear(self.n_g+self.n_z, (self.n_g*8)*4*4)
 
         self.inp_ch = self.n_g*8
 
@@ -59,6 +57,13 @@ class Stage1(nn.Module):
         inp = self.up4(self.up3(self.up2(self.up1(inp))))
         out = self.conv_fin(inp)
         return out
+
+class Stage1Discriminator(nn.Module):
+    """
+    Stage 1 generator
+    """
+    def __init__(self, ):
+        super(Stage1Discriminator, self).__init__()
        
 def _upsample(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
     return nn.Sequential(
@@ -68,3 +73,4 @@ def _upsample(self, in_channels, out_channels, kernel_size=3, stride=1, padding=
         nn.ReLU()
     )
 
+if __name__ == "__main__":
