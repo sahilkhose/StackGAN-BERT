@@ -82,28 +82,52 @@ class Stage1Generator(nn.Module):
 
 class Stage1Discriminator(nn.Module):
     """
-    Stage 1 generator
+    Stage 1 discriminator
     """
-    def __init__(self, n_d=128, m_d=4, bert_dim=768):
+    def __init__(self, n_d=128, m_d=4, bert_dim=768, img_dim=64):
         super(Stage1Discriminator, self).__init__()
         self.n_d = n_d
         self.m_d = m_d
         self.bert_dim = bert_dim
+        lr_slope = 0.01
 
-        self.ff = nn.Linear(self.bert_dim, self.n_d)
+        self.ff_for_text = nn.Linear(self.bert_dim, self.n_d)
+        self.down_sample = nn.Sequential(
+            nn.Conv2d(3, img_dim, kernel_size=4, stride=2, padding=1, bias=True),
+            nn.LeakyReLU(lr_slope, inplace=True), # TODO change slope?
+
+            nn.Conv2d(img_dim, img_dim*2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(img_dim*2),
+            nn.LeakyReLU(lr_slope, inplace=True),
+
+            nn.Conv2d(img_dim*2, img_dim*4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(img_dim*4),
+            nn.LeakyReLU(lr_slope, inplace=True),
+
+            nn.Conv2d(img_dim*4, img_dim*8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(img_dim*8),
+            nn.LeakyReLU(lr_slope, inplace=True)
+        )
+        self.conv1x1 = nn.Conv2d(img_dim*8+self.n_d, img_dim*8+self.n_d, kernel_size=1)
+        self.final = nn.Linear(self.m_d*self.m_d*(self.n_d+(img_dim*8)),1)
+        self.sig = nn.Sigmoid()
 
     def forward(self, text_emb, img):
-        batch_size = text_emb.size()[0]
-        compressed = self.ff(text_emb)
-        compressed = compressed.repeat(batch_size, self.m_d, self.m_d, self.n_d)
+        batch_size = img.size()[0]
 
-def _upsample(in_channels, out_channels, kernel_size=3, stride=1, padding=1):
-    return nn.Sequential(
-        nn.Upsample(scale_factor=2, mode='nearest'),
-        nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=True),
-        nn.BatchNorm2d(out_channels),
-        nn.ReLU()
-    )
+        # image encode
+        enc = self.down_sample(img)
+        # text emb
+        compressed = self.ff_for_text(text_emb)
+        compressed = compressed[:,:,None,None].repeat(1, 1, self.m_d, self.m_d)
+
+        print(compressed.size(), enc.size())
+
+        con = torch.cat((enc, compressed), dim=1)
+        con = self.conv1x1(con)
+        return self.sig(self.final(con.flatten(start_dim=1)))
+
+
 
 class Stage2Generator(nn.Module):
     """
@@ -147,6 +171,14 @@ def _downsample(in_channels, out_channels, kernel_size, stride, padding):
         nn.LeakyReLU()
     )
 
+def _upsample(in_channels, out_channels, kernel_size=3, stride=1, padding=1):
+    return nn.Sequential(
+        nn.Upsample(scale_factor=2, mode='nearest'),
+        nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=True),
+        nn.BatchNorm2d(out_channels),
+        nn.ReLU()
+    )
+
 if __name__ == "__main__":
     emb = torch.randn((2, 768))
     ca1 = CAug(768,128,'cpu')
@@ -154,11 +186,16 @@ if __name__ == "__main__":
     ca2 = CAug(768,128,'cpu')
     generator2 = Stage2Generator()
 
+    discriminator1 = Stage1Discriminator()
+
 
     out_ca1 = ca1(emb)
     print("ca1 output size: ", out_ca1.size())  # (2, 128)
     gen1 = generator1(out_ca1) 
     print("output1 image dimensions :", gen1.size())  # (2, 3, 64, 64)
+
+    disc1 = discriminator1(emb, gen1)
+    print("output1 discriminator", disc1.size())
 
     out_ca2 = ca2(emb)
     print("ca2 output size: ", out_ca2.size())  # (2, 128)
