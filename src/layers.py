@@ -53,7 +53,7 @@ class Stage1Generator(nn.Module):
         batch_size = c_0.size()[0]
         inp = torch.cat((c_0, torch.empty((batch_size, self.n_z)).normal_())) #(batch, n_g+n_z; i.e 228)
         inp = self.ff(inp)
-        inp = inp.reshape((4, 4, self.inp_ch))
+        inp = inp.reshape((batch_size, self.inp_ch, 4, 4))
         inp = self.up4(self.up3(self.up2(self.up1(inp))))
         out = self.conv_fin(inp)
         return out
@@ -62,10 +62,20 @@ class Stage1Discriminator(nn.Module):
     """
     Stage 1 generator
     """
-    def __init__(self, ):
+    def __init__(self, n_d=128, m_d=4, bert_dim=768):
         super(Stage1Discriminator, self).__init__()
-       
-def _upsample(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
+        self.n_d = n_d
+        self.m_d = m_d
+        self.bert_dim = bert_dim
+
+        self.ff = nn.Linear(self.bert_dim, self.n_d)
+
+    def forward(self, text_emb, img):
+        batch_size = text_emb.size()[0]
+        compressed = self.ff(text_emb)
+        compressed = compressed.repeat(batch_size, self.m_d, self.m_d, self.n_d)
+
+def _upsample(in_channels, out_channels, kernel_size=3, stride=1, padding=1):
     return nn.Sequential(
         nn.Upsample(scale_factor=2, mode='nearest'),
         nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=True),
