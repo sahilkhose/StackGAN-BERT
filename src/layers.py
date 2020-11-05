@@ -187,11 +187,16 @@ if __name__ == "__main__":
     ca2 = CAug(768,128,'cpu')
     generator2 = Stage2Generator()
 
+    discriminator1 = Stage1Discriminator()
+
 
     out_ca1 = ca1(emb)
     print("ca1 output size: ", out_ca1.size())  # (2, 128)
     gen1 = generator1(out_ca1) 
     print("output1 image dimensions :", gen1.size())  # (2, 3, 64, 64)
+
+    disc1 = discriminator1(emb, gen1)
+    print("output1 discriminator", disc1.size())
 
     out_ca2 = ca2(emb)
     print("ca2 output size: ", out_ca2.size())  # (2, 128)
