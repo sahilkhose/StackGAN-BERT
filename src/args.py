@@ -6,7 +6,6 @@ Authors:
 """
 import argparse
 
-#TODO can add functions for different scripts (train, test, setup) like squad
 
 def get_parameters():
     '''Get parameters and hyper parameter values'''
@@ -21,7 +20,6 @@ def get_parameters():
     return args
 
 
-
 def get_data_args():
     '''Get all data paths'''
 
@@ -34,7 +32,7 @@ def get_data_args():
     parser.add_argument("--bert_annotations_dir",
                         type=str,
                         default="../input/data/birds/embeddings/",
-                        help="Bert embeddings dir path for annotations")
+                        help="Annotations BERT embeddings dir path")
     parser.add_argument("--bert_path",
                         type=str,
                         default="../input/data/bert_base_uncased/",
@@ -44,12 +42,55 @@ def get_data_args():
                         default="../input/data/CUB_200_2011/images/",
                         help="Images dir path")
 
-
     ###* Files: 
-    parser.add_argument("--class_id_file",
+    add_birds_file_args(parser)
+    # add_cub_file_args(parser)
+
+    args = parser.parse_args()
+    return args
+
+
+def add_birds_file_args(parser):
+    """
+    Paths for files under input/data/birds
+    files:
+        - filenames.pickle            
+            List[str] {filename DOES NOT contain .jpg (or any) extenstion}
+            To fetch the image:           input/data/CUB_200_2011/images/<str>.jpg   == <images_dir>/<str>.jpg
+            To fetch the text annotation: input/data/birds/text_c10/<str>.txt        == <annotations_dir>/<str>.txt
+            To fetch the bert annotation: input/data/birds/embeddings/<str>/[0-9].pt == <bert_annotations_dir>/<str>/[0-9].pt
+    There are 2 such files:
+        input/data/birds/train/filenames.pickle : len = 8855 
+        input/data/birds/test/filenames.pickle  : len = 2933
+    """
+    parser.add_argument("--train_filenames",
                         type=str,
-                        default="../input/data/CUB_200_2011/classes.txt",
-                        help="Text file path: mapping class id to class name")  # <class_id> <class_name>
+                        default="../input/data/birds/train/filenames.pickle",
+                        help="Pickle file path: filenames for train set")
+    parser.add_argument("--test_filenames",
+                        type=str,
+                        default="../input/data/birds/test/filenames.pickle",
+                        help="Pickle file path: filenames for test set")
+
+
+def add_cub_file_args(parser):
+    """
+    Paths for files under input/data/CUB_200_2011
+    files:
+        - images.txt            
+            <image_id> <image_name> {image_name contains .jpg extenstion}
+            To fetch the image: input/data/CUB_200_2011/images/<image_name>
+            number_of_images = 11788
+
+        - train_test_split.txt
+            <image_id> <is_training_image>
+            1: train, 0: test
+            train size = 5994
+            test size = 5794
+
+        - bounding_boxes.txt
+            <image_id> <x> <y> <width> <height>
+    """
     parser.add_argument("--images_id_file",
                         type=str,
                         default="../input/data/CUB_200_2011/images.txt",
@@ -57,14 +98,12 @@ def get_data_args():
 
     #TODO re-run the bert embeddings code. Save the torch tensors using their ids.
 
-    parser.add_argument("--images_to_class_id_file",
-                        type=str,
-                        default="../input/data/CUB_200_2011/image_class_labels.txt",
-                        help="Text file path: mapping image id to class id")  # <image_id> <class_id>
     parser.add_argument("--train_test_split_file",
                         type=str,
                         default="../input/data/CUB_200_2011/train_test_split.txt",
                         help="Text file path: mapping image id to train/test split")  # <image_id> <is_training_image>
-
-    args = parser.parse_args()
-    return args
+    
+    parser.add_argument("--bounding_boxes",
+                        type=str,
+                        default="../input/data/CUB_200_2011/bounding_boxes.txt",
+                        help="Text file path: mapping image id to train/test split")  # <image_id> <x> <y> <width> <height>
