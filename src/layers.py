@@ -82,20 +82,49 @@ class Stage1Generator(nn.Module):
 
 class Stage1Discriminator(nn.Module):
     """
-    Stage 1 generator
+    Stage 1 discriminator
     """
-    def __init__(self, n_d=128, m_d=4, bert_dim=768):
+    def __init__(self, n_d=128, m_d=4, bert_dim=768, img_dim=64):
         super(Stage1Discriminator, self).__init__()
         self.n_d = n_d
         self.m_d = m_d
         self.bert_dim = bert_dim
+        lr_slope = 0.01
 
-        self.ff = nn.Linear(self.bert_dim, self.n_d)
+        self.ff_for_text = nn.Linear(self.bert_dim, self.n_d)
+        self.down_sample = nn.Sequential(
+            nn.Conv2d(3, img_dim, kernel_size=4, stride=2, padding=1, bias=True),
+            nn.LeakyReLU(lr_slope, inplace=True), # TODO change slope?
+
+            nn.Conv2d(img_dim, img_dim*2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(img_dim*2),
+            nn.LeakyReLU(lr_slope, inplace=True),
+
+            nn.Conv2d(img_dim*2, img_dim*4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(img_dim*4),
+            nn.LeakyReLU(lr_slope, inplace=True),
+
+            nn.Conv2d(img_dim*4, img_dim*8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(img_dim*8),
+            nn.LeakyReLU(lr_slope, inplace=True)
+        )
+        self.conv1x1 = nn.Conv2d(self.m_d, self.m_d, kernel_size=1)
+        self.final = nn.Linear(self.m_d*self.m_d*(self.n_d+(img_dim*8)),1)
+        self.sig = nn.Sigmoid()
 
     def forward(self, text_emb, img):
-        batch_size = text_emb.size()[0]
-        compressed = self.ff(text_emb)
-        compressed = compressed.repeat(batch_size, self.m_d, self.m_d, self.n_d)
+        batch_size = img.size()[0]
+
+        # image encode
+        enc = self.down_sample(img)
+        # text emb
+        compressed = self.ff_for_text(text_emb)
+        compressed = compressed[:,:,None,None].repeat(batch_size, self.n_d, self.m_d, self.m_d)
+
+        con = torch.cat((enc, compressed), dim=3)
+        con = self.conv1x1(con)
+        return self.sig(self.final(con.flatten(start_dim=1)))
+
 
 def _upsample(in_channels, out_channels, kernel_size=3, stride=1, padding=1):
     return nn.Sequential(
@@ -113,3 +142,6 @@ if __name__ == "__main__":
     generator = Stage1Generator()
     gen = generator(out_ca)
     print("output image dimensions :", gen.size())
+    disc = Stage1Discriminator()
+    output = disc(emb, gen)
+    print("output discriminator s1: ", output.size())
