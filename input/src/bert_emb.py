@@ -92,8 +92,6 @@ def generate_text_embs():
 if __name__ == "__main__":
     # To determine mex_length in tokenizer.encode_plus()
     # print("Max length of annotations: ", max_len())  # 80
-
-    # TODO 768 dim after 80 max len. figure that out
     
     # Generate sentence embeddings:
     if os.path.exists(config.ANNOTATION_EMB) and len(os.listdir(config.ANNOTATION_EMB)) == len(os.listdir(config.IMAGE_DIR)):
