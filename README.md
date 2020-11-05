@@ -44,5 +44,6 @@ ganctober
 ```
 ## Generating BERT embeddings of annotations
 ```bash
-python3 input/src/bert_emb.py  
+cd input/src
+python3 bert_emb.py  
 ```
