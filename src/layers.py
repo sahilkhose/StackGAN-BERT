@@ -116,13 +116,10 @@ class Stage2Generator(nn.Module):
         """
         super(Stage2Generator, self).__init__()
         self.n_g = n_g
-
         self.down1 = nn.Conv2d(in_channels=3, out_channels=128, kernel_size=3, stride=1, padding=1)  # (batch, 128, 64, 64)
         self.relu1 = nn.LeakyReLU()
         self.down2 = _downsample(128, 256, 4, 2, padding=1)  # (batch, 256, 32, 32)
         self.down3 = _downsample(256, 512, 4, 2, padding=1)  # (batch, 512, 16, 16)
-
-
 
     def forward(self, c_0_hat, s1_image):
         """
@@ -134,10 +131,12 @@ class Stage2Generator(nn.Module):
 
         # downsample:
         down_out = self.down3(self.down2(self.relu1(self.down1(s1_image))))
+        c_out = c_0_hat.unsqueeze(2).unsqueeze(3).repeat(1, 1, 16, 16)
+        # (batch, n_g) -> (batch, n_g, 1, 1) -> (batch, n_g, 16, 16) : n_g = 128
+        concat_out = torch.cat((down_out, c_out), dim=1)
 
 
-
-        return down_out
+        return concat_out
 
 def _downsample(in_channels, out_channels, kernel_size, stride, padding):
     #TODO add layer_1 boolean argument with if else conditions
