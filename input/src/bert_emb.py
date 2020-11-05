@@ -73,7 +73,7 @@ def make_dir(dir_name):
         os.makedirs(dir_name)
 
 def generate_text_embs():
-    print(f"Saving text embeddings to {config.ANNOTATIONS_EMB}")
+    print(f"Saving text embeddings to {config.ANNOTATION_EMB}")
     try:
         make_dir(config.ANNOTATION_EMB)
         for bird_type in tqdm(sorted(os.listdir(config.ANNOTATIONS)), total=len(os.listdir(config.ANNOTATIONS))):
@@ -96,8 +96,8 @@ if __name__ == "__main__":
     # TODO 768 dim after 80 max len. figure that out
     
     # Generate sentence embeddings:
-    if len(os.listdir(config.ANNOTATION_EMB)) != 200:
+    if os.path.exists(config.ANNOTATION_EMB) and len(os.listdir(config.ANNOTATION_EMB)) == len(os.listdir(config.IMAGE_DIR)):
+        print("Bert embeddings already exist. Skipping...")
+    else:
         print("Generating bert embs...")
         generate_text_embs()
-    else:
-        print("Bert embeddings already exist. Skipping...")
