@@ -65,12 +65,12 @@ class Stage1Generator(nn.Module):
         self.up3 = _upsample(self.inp_ch//4, self.inp_ch//8)  # (batch, 128, 32, 32)
         self.up4 = _upsample(self.inp_ch//8, self.inp_ch//16) # (batch, 64, 64, 64)
 
-        self.conv_fin = nn.Conv2d(self.inp_ch//16, 3)  # (batch, 3, 64, 64)
+        self.conv_fin = nn.Conv2d(self.inp_ch//16, 3, kernel_size=3, padding=1)  # (batch, 3, 64, 64)
 
     def forward(self, c_0_hat):
         """
         @param   c_0_hat (torch.tensor) : Output of Conditional Augmentation (batch, n_g) 
-        @returns out     (torch.tensor) : Generator 1 image output           (batch, 64, 64, 3)
+        @returns out     (torch.tensor) : Generator 1 image output           (batch, 3, 64, 64)
         """
         batch_size = c_0_hat.size()[0]
         inp = torch.cat((c_0_hat, torch.empty((batch_size, self.n_z)).normal_()), dim=1)  # (batch, n_g+n_z; i.e 228)
@@ -106,4 +106,10 @@ def _upsample(in_channels, out_channels, kernel_size=3, stride=1, padding=1):
     )
 
 if __name__ == "__main__":
-    pass
+    emb = torch.randn((2, 768))
+    ca = CAug(768,128,'cpu')
+    out_ca = ca(emb)
+    print("ca output size: ", out_ca.size())
+    generator = Stage1Generator()
+    gen = generator(out_ca)
+    print("output image dimensions :", gen.size())
