@@ -70,7 +70,7 @@ class UpSample(nn.Module):
         self.in_ch = in_channels
         self.out_ch = out_channels
         self.up = nn.Upsample(scale_factor=2, mode='nearest')
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=True)
         self.bn = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU()
     def forward(self, x):
