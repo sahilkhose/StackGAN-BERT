@@ -114,26 +114,13 @@ class Stage2Generator(nn.Module):
         """
         @param n_g (int) : Dimension of c_0_hat.
         """
-        super(Stage1Generator, self).__init__()
+        super(Stage2Generator, self).__init__()
         self.n_g = n_g
 
         self.down1 = nn.Conv2d(in_channels=3, out_channels=128, kernel_size=3, stride=1, padding=1)  # (batch, 128, 64, 64)
         self.relu1 = nn.LeakyReLU()
-        self.down1 = _downsample(128, 256, 4, 2, padding=1)  # (batch, 256, 32, 32)
-        self.down2 = _downsample(256, 512, 4, 2, padding=1)  # (batch, 512, 16, 16)
-
-
-        # self.down2 = 
-        # self.ff = nn.Linear(self.n_g, (self.n_g*8) * 4*4)
-
-        # self.inp_ch = self.n_g*8
-
-        # self.up1 = _upsample(self.inp_ch,    self.inp_ch//2)  # (batch, 512, 8, 8)
-        # self.up2 = _upsample(self.inp_ch//2, self.inp_ch//4)  # (batch, 256, 16, 16)
-        # self.up3 = _upsample(self.inp_ch//4, self.inp_ch//8)  # (batch, 128, 32, 32)
-        # self.up4 = _upsample(self.inp_ch//8, self.inp_ch//16) # (batch, 64, 64, 64)
-
-        # self.conv_fin = nn.Conv2d(self.inp_ch//16, 3, kernel_size=3, padding=1)  # (batch, 3, 64, 64)
+        self.down2 = _downsample(128, 256, 4, 2, padding=1)  # (batch, 256, 32, 32)
+        self.down3 = _downsample(256, 512, 4, 2, padding=1)  # (batch, 512, 16, 16)
 
 
 
@@ -146,17 +133,13 @@ class Stage2Generator(nn.Module):
         batch_size = c_0_hat.size()[0]
 
         # downsample:
+        down_out = self.down3(self.down2(self.relu1(self.down1(s1_image))))
 
 
 
-        # inp = torch.cat((c_0_hat, torch.empty((batch_size, self.n_z)).normal_()), dim=1)  # (batch, n_g+n_z; i.e 228)
-        # inp = self.ff(inp)  # (batch, 1024 * 4 * 4) : 1024 => n_g * 8 => 128 * 8
-        # inp = inp.reshape((batch_size, self.inp_ch, 4, 4))  # (batch, 1024, 4, 4)
-        # inp = self.up4(self.up3(self.up2(self.up1(inp))))  # (batch, 64, 64, 64)
-        # out = self.conv_fin(inp)  # (batch, 3, 64, 64)
-        return out
+        return down_out
 
-def _downsample(self, in_channels, out_channels, kernel_size, stride, padding):
+def _downsample(in_channels, out_channels, kernel_size, stride, padding):
     #TODO add layer_1 boolean argument with if else conditions
     #TODO figure out leaky relu 
     return nn.Sequential(
@@ -180,5 +163,5 @@ if __name__ == "__main__":
 
     out_ca2 = ca2(emb)
     print("ca2 output size: ", out_ca2.size())  # (2, 128)
-    gen2 = generator2(out_ca2)
-    print("output2 image dimensions :", gen2.size())  # ()
+    gen2 = generator2(out_ca2, gen1)
+    print("output2 image dimensions :", gen2.size())  # (2, 512, 16, 16)
