@@ -20,6 +20,52 @@ def get_parameters():
     return args
 
 
+def get_model_params():
+    """
+    Refer to StackGAN paper: https://arxiv.org/pdf/1612.03242.pdf 
+    for parameter names.
+    """
+    parser = argparse.ArgumentParser("Model parameters")
+    parser.add_argument("--n_g",
+                        type=int,
+                        default=128,
+                        help="")
+    parser.add_argument("--n_z",
+                        type=int,
+                        default=100,
+                        help="")
+    parser.add_argument("--m_d",
+                        type=int,
+                        default=4,
+                        help="")
+    parser.add_argument("--m_g",
+                        type=int,
+                        default=16,
+                        help="")
+    parser.add_argument("--n_d",
+                        type=int,
+                        default=128,
+                        help="")
+    parser.add_argument("--w_0",
+                        type=int,
+                        default=64,
+                        help="")
+    parser.add_argument("--h_0",
+                        type=int,
+                        default=256,
+                        help="")
+    parser.add_argument("--w",
+                        type=int,
+                        default=256,
+                        help="")
+    parser.add_argument("--h",
+                        type=int,
+                        default=256,
+                        help="")
+
+    args = parser.parse_args()
+    return args
+
 def get_data_args():
     '''Get all data paths'''
 
