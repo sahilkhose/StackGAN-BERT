@@ -56,9 +56,14 @@ class Stage1Generator(nn.Module):
         super(Stage1Generator, self).__init__()
         self.n_g = n_g
         self.n_z = n_z
-        self.ff = nn.Linear(self.n_g + self.n_z, (self.n_g*8) * 4*4)
+        self.ff = nn.Linear(self.n_g + self.n_z, (self.n_g*8) * 4*4)  # (batch, 1024 * (4*4))
 
-        self.inp_ch = self.n_g*8
+        self.inp_ch = self.n_g*8  
+        """
+        To map (4, 4) -> (64, 64)
+        There will be 4 -> 8, 8 -> 16, 16 -> 32, 32 -> 64 : 4 upsampling blocks
+        The hidden dimension halves with every upsampling block.
+        """
 
         self.up1 = _upsample(self.inp_ch,    self.inp_ch//2)  # (batch, 512, 8, 8)
         self.up2 = _upsample(self.inp_ch//2, self.inp_ch//4)  # (batch, 256, 16, 16)
@@ -67,14 +72,23 @@ class Stage1Generator(nn.Module):
 
         self.conv_fin = nn.Conv2d(self.inp_ch//16, 3, kernel_size=3, padding=1)  # (batch, 3, 64, 64)
 
+        #? There is no mention of conv2d in the paper
+        #? They mention using upsampling blocks and the last upsampling block does not have
+        #? a batch norm and relu activation
+        #? We can just set output channels of self.up4 to 3 to solve this problem
+        #? I think this conv2d is used because of the keras implementation
+
     def forward(self, c_0_hat):
         """
         @param   c_0_hat (torch.tensor) : Output of Conditional Augmentation (batch, n_g) 
         @returns out     (torch.tensor) : Generator 1 image output           (batch, 3, 64, 64)
         """
         batch_size = c_0_hat.size()[0]
-        inp = torch.cat((c_0_hat, torch.empty((batch_size, self.n_z)).normal_()), dim=1)  # (batch, n_g+n_z; i.e 228)
+        # Concat c_0_hat with z:
+        inp = torch.cat((c_0_hat, torch.empty((batch_size, self.n_z)).normal_()), dim=1)  # (batch, n_g + n_z) (batch, 128 + 100)
+
         inp = self.ff(inp)  # (batch, 1024 * 4 * 4) : 1024 => n_g * 8 => 128 * 8
+        
         inp = inp.reshape((batch_size, self.inp_ch, 4, 4))  # (batch, 1024, 4, 4)
         inp = self.up4(self.up3(self.up2(self.up1(inp))))  # (batch, 64, 64, 64)
         out = self.conv_fin(inp)  # (batch, 3, 64, 64)
