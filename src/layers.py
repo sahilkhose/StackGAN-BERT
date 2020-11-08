@@ -66,7 +66,7 @@ class CAug(nn.Module):
     """Module for conditional augmentation.
     Takes input as bert embeddings of annotations and sends output to Stage 1 and 2 generators.
     """
-    def __init__ (self, bert_dim=768, n_g=128, device="cpu"):
+    def __init__ (self, bert_dim=768, n_g=128, device="cpu"): #! CHANGE THIS TO CUDA
         """
         @param bert_dim (int)           : Size of bert annotation embeddings. 
         @param n_g      (int)           : Dimension of mu, epsilon and c_0_hat
@@ -188,7 +188,9 @@ class Stage1Discriminator(nn.Module):
             # -> (batch, img_dim * 8, 4, 4)
             _downsample(img_dim*4, img_dim*8)
         )
+        # -> (batch, img_dim*8 + n_d)
         self.conv1x1 = nn.Conv2d(img_dim*8 + self.n_d, img_dim*8 + self.n_d, kernel_size=1)
+        # -> (batch, 1)
         self.final = nn.Linear(self.m_d * self.m_d * (self.n_d + (img_dim*8)), 1)
         self.sig = nn.Sigmoid()
 
@@ -313,29 +315,36 @@ class Stage2Discriminator(nn.Module):
 
         self.fc_for_text = nn.Linear(self.bert_dim, self.n_d)
         self.down_sample = nn.Sequential(
-            nn.Conv2d(3, 16, kernel_size=4, stride=2, padding=1, bias=False),  # (batch, 16, 128, 128)
-            nn.LeakyReLU(0.2, inplace=True),  # TODO change slope?
-            _downsample(16, 32),  # (batch, 32, 64, 64)
-            _downsample(32, 64),  # (batch, 64, 32, 32)
-            _downsample(64, 128), # (batch, 128, 16, 16)
-            _downsample(128, 256),# (batch, 256, 8, 8)
-            _downsample(256, 512),# (batch, 512, 4, 4)
+            # (batch, 3, 64, 64) -> (batch, img_dim//16, 128, 128)
+            nn.Conv2d(3, img_dim//16, kernel_size=4, stride=2, padding=1, bias=False),  # (batch, 16, 128, 128)
+            nn.LeakyReLU(0.2, inplace=True),
+            # -> (batch, img_dim//8, 64, 64)
+            _downsample(img_dim//16, img_dim//8),  # (batch, 32, 64, 64)
+            # -> (batch, img_dim//4, 32, 32)
+            _downsample(img_dim//8, img_dim//4),  # (batch, 64, 32, 32)
+            # -> (batch, img_dim//2, 16, 16)
+            _downsample(img_dim//4, img_dim//2), # (batch, 128, 16, 16)
+            # -> (batch, img_dim, 8, 8)
+            _downsample(img_dim//2, img_dim),# (batch, 256, 8, 8)
+            # -> (batch, img_dim*2, 4, 4)
+            _downsample(img_dim, img_dim*2),# (batch, 512, 4, 4)
         )
+        # -> (batch, img_dim*2 + n_d, 4, 4)
         self.conv1x1 = nn.Conv2d(img_dim*2+self.n_d, img_dim*2+self.n_d, kernel_size=1)
+        # -> (batch, 1)
         self.final = nn.Linear(self.m_d*self.m_d*(self.n_d+(img_dim*2)), 1)
         self.sig = nn.Sigmoid()
 
     def forward(self, text_emb, img):
-        batch_size = img.size()[0]
-
         # image encode
         enc = self.down_sample(img)
+
         # text emb
         compressed = self.fc_for_text(text_emb)
-        compressed = compressed[:, :, None, None].repeat(
-            1, 1, self.m_d, self.m_d)
+        compressed = compressed.unsqueeze(2).unsqueeze(3).repeat(1, 1, self.m_d, self.m_d)
 
         con = torch.cat((enc, compressed), dim=1)
+
         con = self.conv1x1(con)
         return self.sig(self.final(con.flatten(start_dim=1)))
 
