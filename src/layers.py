@@ -16,13 +16,34 @@ def conv3x3(in_channels, out_channels):
     """3x3 conv with same padding"""
     return nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
 
-def _residual(in_channels, out_channels):
+def _residual(in_channels):
     return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, kernel_size=3,
+        nn.Conv2d(in_channels, in_channels, kernel_size=3,
                   stride=1, padding=1, bias=False),
         nn.BatchNorm2d(out_channels),
         nn.ReLU(inplace=True)
     )
+
+
+class ResBlock(nn.Module):
+    def __init__(self, channel_num):
+        super(ResBlock, self).__init__()
+        self.block = nn.Sequential(
+            conv3x3(channel_num, channel_num),
+            nn.BatchNorm2d(channel_num),
+            nn.ReLU(True),
+            conv3x3(channel_num, channel_num),
+            nn.BatchNorm2d(channel_num))
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        residual = x
+        out = self.block(x)
+        out += residual
+        out = self.relu(out)
+        return out
+
+
 
 def _downsample(in_channels, out_channels):
     return nn.Sequential(
@@ -54,7 +75,7 @@ class CAug(nn.Module):
         super(CAug, self).__init__()
         self.bert_dim = bert_dim
         self.n_g = n_g
-        self.ff = nn.Linear(self.bert_dim, self.n_g*2, bias=True)  # To split in mu and sigma
+        self.fc = nn.Linear(self.bert_dim, self.n_g*2, bias=True)  # To split in mu and sigma
         self.relu = nn.ReLU()
         self.device = device
 
@@ -63,7 +84,7 @@ class CAug(nn.Module):
         @param   text_emb (torch.tensor): Text embedding.                 (batch, bert_dim)
         @returns c_0_hat  (torch.tensor): Gaussian conditioning variable. (batch, n_g)
         """
-        enc = self.relu(self.ff(text_emb))  # (batch, n_g*2)
+        enc = self.relu(self.fc(text_emb))  # (batch, n_g*2)
 
         mu = enc[:, :self.n_g]  # (batch, n_g)
         logvar = enc[:, self.n_g:]  # (batch, n_g)
@@ -121,13 +142,12 @@ class Stage1Generator(nn.Module):
             nn.Tanh()
         )
 
-    def forward(self, text_emb):
+    def forward(self, text_emb, noise):
         """
         @param   c_0_hat (torch.tensor) : Output of Conditional Augmentation (batch, n_g) 
         @returns out     (torch.tensor) : Generator 1 image output           (batch, 3, 64, 64)
         """
         c_0_hat, mu, logvar = self.caug(text_emb)
-        noise = torch.empty((batch_size, self.n_z)).normal_()
 
         # -> (batch, n_g + n_z) (batch, 128 + 100)
         c_z = torch.cat((c_0_hat, noise), dim=1)  
@@ -144,7 +164,7 @@ class Stage1Generator(nn.Module):
         inp = self.up4(inp)  # (batch, 64, 64, 64)
 
         fake_img = self.img(inp)  # (batch, 3, 64, 64)
-        return fake_img, mu, logvar
+        return None, fake_img, mu, logvar
 
 class Stage1Discriminator(nn.Module):
     """
@@ -156,29 +176,32 @@ class Stage1Discriminator(nn.Module):
         self.m_d = m_d
         self.bert_dim = bert_dim
 
-        self.ff_for_text = nn.Linear(self.bert_dim, self.n_d)
+        self.fc_for_text = nn.Linear(self.bert_dim, self.n_d)
         self.down_sample = nn.Sequential(
+            # (batch, 3, 64, 64) -> (batch, img_dim, 32, 32)
             nn.Conv2d(3, img_dim, kernel_size=4, stride=2, padding=1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
-
+            # -> (batch, img_dim * 2, 16, 16)
             _downsample(img_dim, img_dim*2),
+            # -> (batch, img_dim * 4, 8, 8)
             _downsample(img_dim*2, img_dim*4),
+            # -> (batch, img_dim * 8, 4, 4)
             _downsample(img_dim*4, img_dim*8)
         )
-        self.conv1x1 = nn.Conv2d(img_dim*8+self.n_d, img_dim*8+self.n_d, kernel_size=1)
-        self.final = nn.Linear(self.m_d*self.m_d*(self.n_d+(img_dim*8)),1)
+        self.conv1x1 = nn.Conv2d(img_dim*8 + self.n_d, img_dim*8 + self.n_d, kernel_size=1)
+        self.final = nn.Linear(self.m_d * self.m_d * (self.n_d + (img_dim*8)), 1)
         self.sig = nn.Sigmoid()
 
     def forward(self, text_emb, img):
-        batch_size = img.size()[0]
-
         # image encode
         enc = self.down_sample(img)
+
         # text emb
-        compressed = self.ff_for_text(text_emb)
-        compressed = compressed[:,:,None,None].repeat(1, 1, self.m_d, self.m_d)
+        compressed = self.fc_for_text(text_emb)
+        compressed = compressed.unsqueeze(2).unsqueeze(3).repeat(1, 1, self.m_d, self.m_d)
 
         con = torch.cat((enc, compressed), dim=1)
+
         con = self.conv1x1(con)
         return self.sig(self.final(con.flatten(start_dim=1)))
 
@@ -189,54 +212,92 @@ class Stage2Generator(nn.Module):
     Stage 2 generator.
     Takes in input from Conditional Augmentation and outputs 256x256 image to Stage2Discrimantor.
     """
-    def __init__(self, n_g=128):
+    def __init__(self, n_g=128, n_z=100, ef_size=128, n_res=4):
         """
         @param n_g (int) : Dimension of c_0_hat.
         """
         super(Stage2Generator, self).__init__()
         self.n_g = n_g
-        self.down1 = nn.Conv2d(in_channels=3, out_channels=128, kernel_size=3, stride=1, padding=1)  # (batch, 128, 64, 64)
-        self.relu1 = nn.LeakyReLU(inplace=True)
-        self.down2 = _downsample(128, 256)  # (batch, 256, 32, 32)
-        self.down3 = _downsample(256, 512)  # (batch, 512, 16, 16)
-        self.res1 = _residual(512 + self.n_g, 512 + self.n_g)  # (batch, 640, 16, 16)
-        self.res2 = _residual(512 + self.n_g, 512 + self.n_g)  # (batch, 640, 16, 16)
-        self.res3 = _residual(512 + self.n_g, 512 + self.n_g)  # (batch, 640, 16, 16)
-        self.res4 = _residual(512 + self.n_g, 512 + self.n_g)  # (batch, 640, 16, 16)
-        self.up1 = _upsample(512 + self.n_g, 512)  # (batch, 512, 32, 32)
-        self.up2 = _upsample(512, 256)  # (batch, 256, 64, 64)
-        self.up3 = _upsample(256, 128)  # (batch, 128, 128, 128)
-        self.up4 = _upsample(128, 64)   # (batch, 64, 256, 256)
-        self.conv = nn.Conv2d(64, 3, kernel_size=3, stride=1, padding=1)  # (batch, 3, 256, 256)
+        self.n_z = n_z
+        self.ef_size = ef_size
+        self.n_res = n_res
 
-    def forward(self, c_0_hat, s1_image):
+        self.stage1_gen = Stage1Generator()
+        # Freezing the stage 1 generator:
+        for param in self.stage1_gen.parameters():
+            param.requires_grad = False
+
+        # (batch, bert_size) -> (batch, n_g)
+        self.caug = CAug()
+
+        # -> (batch, n_g*4, 16, 16)
+        self.encoder = nn.Sequential(
+            conv3x3(3, n_g),
+            nn.LeakyReLU(0.2, inplace=True), #? Paper: leaky, code: relu
+            _downsample(n_g, n_g*2),
+            _downsample(n_g*2, n_g*4)
+        )
+
+        # (batch, ef_size + n_g * 4, 16, 16) -> (batch, n_g * 4, 16, 16)
+        self.cat_conv = nn.Sequential(
+            conv3x3(self.ef_size + self.n_g * 4, self.n_g * 4),
+            nn.BatchNorm2d(self.n_g * 4),
+            nn.ReLU(inplace=True)
+        )
+        
+        # -> (batch, n_g * 4, 16, 16)
+        self.residual = nn.Sequential(
+            *[
+                ResBlock(self.n_g * 4) for _ in range(self.n_res)
+            ]
+        )
+
+        # -> (batch, n_g * 2, 32, 32)
+        self.up1 = _upsample(n_g * 4, n_g * 2)
+        # -> (batch, n_g, 64, 64)
+        self.up2 = _upsample(n_g * 2, n_g)
+        # -> (batch, n_g // 2, 128, 128)
+        self.up3 = _upsample(n_g, n_g // 2)
+        # -> (batch, n_g // 4, 256, 256)
+        self.up4 = _upsample(n_g // 2, n_g // 4)
+
+        # (batch, 3, 256, 256)
+        self.img = nn.Sequential(
+            conv3x3(n_g // 4, 3),
+            nn.Tanh()
+        )
+
+    def forward(self, text_emb, noise):
         """
         @param   c_0_hat  (torch.tensor) : Output of Conditional Augmentation (batch, n_g) 
         @param   s1_image (torch.tensor) : Ouput of Stage 1 Generator         (batch, 3, 64, 64)
         @returns out      (torch.tensor) : Generator 2 image output           (batch, 3, 256, 256)
         """
-        batch_size = c_0_hat.size()[0]
+        _, stage1_img, _, _ = self.stage1_gen(text_emb, noise)
+        stage1_img = stage1_img.detach()
 
-        # downsample:
-        down_out = self.down3(self.down2(self.relu1(self.down1(s1_image))))
-        c_out = c_0_hat.unsqueeze(2).unsqueeze(3).repeat(1, 1, 16, 16)  # (batch, n_g, 16, 16)  # (batch, 128, 16, 16)
-        # (batch, n_g) -> (batch, n_g, 1, 1) -> (batch, n_g, 16, 16) : n_g = 128
-        concat_out = torch.cat((down_out, c_out), dim=1)  # (batch, n_g + 512, 16, 16) # (batch, 640, 16, 16)
+        encoded_img = self.encoder(stage1_img)
 
-        res1_out = self.res1(concat_out)  # (batch, 640, 16, 16)
+        c_0_hat, mu, logvar = self.caug(text_emb)
+        c_0_hat = c_0_hat.unsqueeze(2).unsqueeze(3).repeat(1, 1, 16, 16)
 
-        res2_in = res1_out + concat_out
-        res2_out = self.res2(res2_in)  # (batch, 640, 16, 16)
+        # -> (batch, ef_size + n_g * 4, 16, 16) # (batch, 640, 16, 16)
+        concat_out = torch.cat((encoded_img, c_0_hat), dim=1)
 
-        res3_in = res2_out + res2_in
-        res3_out = self.res3(res3_in)  # (batch, 640, 16, 16)
+        # -> (batch, n_g * 4, 16, 16)
+        h_out = self.cat_conv(concat_out)
+        h_out = self.residual(h_out)
+        
+        h_out = self.up1(h_out)
+        h_out = self.up2(h_out)
+        h_out = self.up3(h_out)
+        # -> (batch, ng // 4, 256, 256)
+        h_out = self.up4(h_out)
 
-        res4_in = res3_out + res3_in
-        res4_out = self.res4(res4_in)  # (batch, 640, 16, 16)
+        # -> (batch, 3, 256, 256)
+        fake_img = self.img(h_out)
 
-        gen_out = self.conv(self.up4(self.up3(self.up2(self.up1(res4_out)))))  # (batch, 3, 256, 256)
-
-        return gen_out
+        return stage1_img, fake_img, mu, logvar
 
 
 class Stage2Discriminator(nn.Module):
@@ -250,7 +311,7 @@ class Stage2Discriminator(nn.Module):
         self.m_d = m_d
         self.bert_dim = bert_dim
 
-        self.ff_for_text = nn.Linear(self.bert_dim, self.n_d)
+        self.fc_for_text = nn.Linear(self.bert_dim, self.n_d)
         self.down_sample = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=4, stride=2, padding=1, bias=False),  # (batch, 16, 128, 128)
             nn.LeakyReLU(0.2, inplace=True),  # TODO change slope?
@@ -270,7 +331,7 @@ class Stage2Discriminator(nn.Module):
         # image encode
         enc = self.down_sample(img)
         # text emb
-        compressed = self.ff_for_text(text_emb)
+        compressed = self.fc_for_text(text_emb)
         compressed = compressed[:, :, None, None].repeat(
             1, 1, self.m_d, self.m_d)
 
@@ -283,20 +344,18 @@ class Stage2Discriminator(nn.Module):
 
 if __name__ == "__main__":
     batch_size = 2
+    n_z = 100
     emb = torch.randn((batch_size, 768))
-    # ca1 = CAug(768,128,'cpu')
+    noise = torch.empty((batch_size, n_z)).normal_()
+
     generator1 = Stage1Generator()
-    ca2 = CAug(768,128,'cpu')
     generator2 = Stage2Generator()
 
     discriminator1 = Stage1Discriminator()
     discriminator2 = Stage2Discriminator()
 
 
-    # out_ca1 = ca1(emb)
-    # print("ca1 output size: ", out_ca1.size())  # (batch_size, 128)
-    # assert out_ca1.shape == (batch_size, 128)
-    gen1, _, _ = generator1(emb) 
+    _, gen1, _, _ = generator1(emb, noise) 
     print("output1 image dimensions :", gen1.size())  # (batch_size, 3, 64, 64)
     assert gen1.shape == (batch_size, 3, 64, 64)
     print()
@@ -306,10 +365,7 @@ if __name__ == "__main__":
     assert disc1.shape == (batch_size, 1)
     print()
 
-    out_ca2, _, _ = ca2(emb)
-    print("ca2 output size: ", out_ca2.size())  # (batch_size, 128)
-    assert out_ca2.shape == (batch_size, 128)
-    gen2 = generator2(out_ca2, gen1)
+    _, gen2, _, _ = generator2(emb, noise)
     print("output2 image dimensions :", gen2.size())  # (batch_size, 3, 256, 256)
     assert gen2.shape == (batch_size, 3, 256, 256)
     print()
@@ -317,3 +373,9 @@ if __name__ == "__main__":
     disc2 = discriminator2(emb, gen2)
     print("output2 discriminator", disc2.size())  # (batch_size, 1)
     assert disc2.shape == (batch_size, 1)
+    print()
+    
+    ca = CAug(768,128,'cpu')
+    out_ca, _, _ = ca(emb)
+    print("Conditional Aug output size: ", out_ca.size())  # (batch_size, 128)
+    assert out_ca.shape == (batch_size, 128)
