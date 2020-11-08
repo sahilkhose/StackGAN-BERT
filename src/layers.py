@@ -11,11 +11,41 @@ import torch.nn as nn
 
 from torch.autograd import Variable
 
+
+def conv3x3(in_channels, out_channels):
+    """3x3 conv with same padding"""
+    return nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
+
+def _residual(in_channels, out_channels):
+    return nn.Sequential(
+        nn.Conv2d(in_channels, out_channels, kernel_size=3,
+                  stride=1, padding=1, bias=False),
+        nn.BatchNorm2d(out_channels),
+        nn.ReLU(inplace=True)
+    )
+
+def _downsample(in_channels, out_channels):
+    return nn.Sequential(
+        nn.Conv2d(in_channels, out_channels, kernel_size=4,
+                  stride=2, padding=1, bias=False),
+        nn.BatchNorm2d(out_channels),
+        nn.LeakyReLU(0.2, inplace=True)
+    )
+
+def _upsample(in_channels, out_channels):
+    return nn.Sequential(
+        nn.Upsample(scale_factor=2, mode='nearest'),
+        nn.Conv2d(in_channels, out_channels, kernel_size=3,
+                  stride=1, padding=1, bias=False),
+        nn.BatchNorm2d(out_channels),
+        nn.ReLU(inplace=True)
+    )
+
 class CAug(nn.Module):
     """Module for conditional augmentation.
     Takes input as bert embeddings of annotations and sends output to Stage 1 and 2 generators.
     """
-    def __init__ (self, bert_dim=768, n_g=128, device=torch.cuda):
+    def __init__ (self, bert_dim=768, n_g=128, device="cpu"):
         """
         @param bert_dim (int)           : Size of bert annotation embeddings. 
         @param n_g      (int)           : Dimension of mu, epsilon and c_0_hat
@@ -24,24 +54,32 @@ class CAug(nn.Module):
         super(CAug, self).__init__()
         self.bert_dim = bert_dim
         self.n_g = n_g
-        self.ff = nn.Linear(self.bert_dim, self.n_g*2)  # To split in mu and sigma
+        self.ff = nn.Linear(self.bert_dim, self.n_g*2, bias=True)  # To split in mu and sigma
         self.relu = nn.ReLU()
         self.device = device
 
-    def forward(self, x):
+    def forward(self, text_emb):
         """
-        @param   x       (torch.tensor): Text embedding.                 (batch, bert_dim)
-        @returns c_0_hat (torch.tensor): Gaussian conditioning variable. (batch, n_g)
+        @param   text_emb (torch.tensor): Text embedding.                 (batch, bert_dim)
+        @returns c_0_hat  (torch.tensor): Gaussian conditioning variable. (batch, n_g)
         """
-        enc = self.relu(self.ff(x))  # (batch, n_g*2)
-        mu = enc[:,:self.n_g]  # (batch, n_g)
-        sigma = enc[:,self.n_g:]  # (batch, n_g)
+        enc = self.relu(self.ff(text_emb))  # (batch, n_g*2)
+
+        mu = enc[:, :self.n_g]  # (batch, n_g)
+        logvar = enc[:, self.n_g:]  # (batch, n_g)
+
+        sigma = (logvar * 0.5).exp_()  # exp(logvar * 0.5) = exp(log(var^0.5)) = sqrt(var) = std 
+
         if self.device==torch.cuda:
             epsilon = Variable(torch.cuda.FloatTensor(sigma.size()).normal_())
         else:
             epsilon = Variable(torch.FloatTensor(sigma.size()).normal_())
+
         c_0_hat = epsilon * sigma + mu  # (batch, n_g)
-        return c_0_hat
+
+        return c_0_hat, mu, logvar
+
+######################### STAGE 1 #########################
 
 class Stage1Generator(nn.Module):
     """
@@ -56,43 +94,57 @@ class Stage1Generator(nn.Module):
         super(Stage1Generator, self).__init__()
         self.n_g = n_g
         self.n_z = n_z
-        self.ff = nn.Linear(self.n_g + self.n_z, (self.n_g*8) * 4*4)  # (batch, 1024 * (4*4))
-
         self.inp_ch = self.n_g*8  
-        """
-        To map (4, 4) -> (64, 64)
-        There will be 4 -> 8, 8 -> 16, 16 -> 32, 32 -> 64 : 4 upsampling blocks
-        The hidden dimension halves with every upsampling block.
-        """
 
-        self.up1 = _upsample(self.inp_ch,    self.inp_ch//2)  # (batch, 512, 8, 8)
-        self.up2 = _upsample(self.inp_ch//2, self.inp_ch//4)  # (batch, 256, 16, 16)
-        self.up3 = _upsample(self.inp_ch//4, self.inp_ch//8)  # (batch, 128, 32, 32)
-        self.up4 = _upsample(self.inp_ch//8, self.inp_ch//16) # (batch, 64, 64, 64)
+        # (batch, bert_size) -> (batch, n_g)
+        self.caug = CAug()
 
-        self.conv_fin = nn.Conv2d(self.inp_ch//16, 3, kernel_size=3, padding=1)  # (batch, 3, 64, 64)
+        # (batch, n_g + n_z) -> (batch, inp_ch * 4 * 4)
+        self.fc = nn.Sequential(
+            nn.Linear(self.n_g + self.n_z, self.inp_ch * 4 * 4, bias=False),
+            nn.BatchNorm1d(self.inp_ch * 4 * 4),
+            nn.ReLU(True)
+        )
 
-        #? There is no mention of conv2d in the paper
-        #? They mention using upsampling blocks and the last upsampling block does not have
-        #? a batch norm and relu activation
-        #? We can just set output channels of self.up4 to 3 to solve this problem
-        #? I think this conv2d is used because of the keras implementation
+        # (batch, inp_ch, 4, 4) -> (batch, inp_ch//2, 8, 8)
+        self.up1 = _upsample(self.inp_ch,    self.inp_ch // 2)
+        # -> (batch, inp_ch//4, 16, 16)
+        self.up2 = _upsample(self.inp_ch // 2, self.inp_ch // 4)
+        # -> (batch, inp_ch//8, 32, 32)
+        self.up3 = _upsample(self.inp_ch // 4, self.inp_ch // 8)
+        # -> (batch, inp_ch//16, 64, 64)
+        self.up4 = _upsample(self.inp_ch // 8, self.inp_ch // 16)
 
-    def forward(self, c_0_hat):
+        # -> (batch, 3, 64, 64)
+        self.img = nn.Sequential(
+            conv3x3(self.inp_ch // 16, 3),
+            nn.Tanh()
+        )
+
+    def forward(self, text_emb):
         """
         @param   c_0_hat (torch.tensor) : Output of Conditional Augmentation (batch, n_g) 
         @returns out     (torch.tensor) : Generator 1 image output           (batch, 3, 64, 64)
         """
-        batch_size = c_0_hat.size()[0]
-        # Concat c_0_hat with z:
-        inp = torch.cat((c_0_hat, torch.empty((batch_size, self.n_z)).normal_()), dim=1)  # (batch, n_g + n_z) (batch, 128 + 100)
+        c_0_hat, mu, logvar = self.caug(text_emb)
+        noise = torch.empty((batch_size, self.n_z)).normal_()
 
-        inp = self.ff(inp)  # (batch, 1024 * 4 * 4) : 1024 => n_g * 8 => 128 * 8
+        # -> (batch, n_g + n_z) (batch, 128 + 100)
+        c_z = torch.cat((c_0_hat, noise), dim=1)  
+
+        # -> (batch, 1024 * 4 * 4)
+        inp = self.fc(c_z)
         
-        inp = inp.reshape((batch_size, self.inp_ch, 4, 4))  # (batch, 1024, 4, 4)
-        inp = self.up4(self.up3(self.up2(self.up1(inp))))  # (batch, 64, 64, 64)
-        out = self.conv_fin(inp)  # (batch, 3, 64, 64)
-        return out
+        # -> (batch, 1024, 4, 4)
+        inp = inp.view(-1, self.inp_ch, 4, 4)
+
+        inp = self.up1(inp)  # (batch, 512, 8, 8)
+        inp = self.up2(inp)  # (batch, 256, 16, 16)
+        inp = self.up3(inp)  # (batch, 128, 32, 32)
+        inp = self.up4(inp)  # (batch, 64, 64, 64)
+
+        fake_img = self.img(inp)  # (batch, 3, 64, 64)
+        return fake_img, mu, logvar
 
 class Stage1Discriminator(nn.Module):
     """
@@ -103,12 +155,11 @@ class Stage1Discriminator(nn.Module):
         self.n_d = n_d
         self.m_d = m_d
         self.bert_dim = bert_dim
-        lr_slope = 0.01
 
         self.ff_for_text = nn.Linear(self.bert_dim, self.n_d)
         self.down_sample = nn.Sequential(
-            nn.Conv2d(3, img_dim, kernel_size=4, stride=2, padding=1, bias=True),
-            nn.LeakyReLU(lr_slope, inplace=True), # TODO change slope?
+            nn.Conv2d(3, img_dim, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
 
             _downsample(img_dim, img_dim*2),
             _downsample(img_dim*2, img_dim*4),
@@ -132,7 +183,7 @@ class Stage1Discriminator(nn.Module):
         return self.sig(self.final(con.flatten(start_dim=1)))
 
 
-
+######################### STAGE 2 #########################
 class Stage2Generator(nn.Module):
     """
     Stage 2 generator.
@@ -145,7 +196,7 @@ class Stage2Generator(nn.Module):
         super(Stage2Generator, self).__init__()
         self.n_g = n_g
         self.down1 = nn.Conv2d(in_channels=3, out_channels=128, kernel_size=3, stride=1, padding=1)  # (batch, 128, 64, 64)
-        self.relu1 = nn.LeakyReLU()
+        self.relu1 = nn.LeakyReLU(inplace=True)
         self.down2 = _downsample(128, 256)  # (batch, 256, 32, 32)
         self.down3 = _downsample(256, 512)  # (batch, 512, 16, 16)
         self.res1 = _residual(512 + self.n_g, 512 + self.n_g)  # (batch, 640, 16, 16)
@@ -198,12 +249,11 @@ class Stage2Discriminator(nn.Module):
         self.n_d = n_d
         self.m_d = m_d
         self.bert_dim = bert_dim
-        lr_slope = 0.01
 
         self.ff_for_text = nn.Linear(self.bert_dim, self.n_d)
         self.down_sample = nn.Sequential(
-            nn.Conv2d(3, 16, kernel_size=4, stride=2, padding=1, bias=True),  # (batch, 16, 128, 128)
-            nn.LeakyReLU(lr_slope, inplace=True),  # TODO change slope?
+            nn.Conv2d(3, 16, kernel_size=4, stride=2, padding=1, bias=False),  # (batch, 16, 128, 128)
+            nn.LeakyReLU(0.2, inplace=True),  # TODO change slope?
             _downsample(16, 32),  # (batch, 32, 64, 64)
             _downsample(32, 64),  # (batch, 64, 32, 32)
             _downsample(64, 128), # (batch, 128, 16, 16)
@@ -228,35 +278,13 @@ class Stage2Discriminator(nn.Module):
         con = self.conv1x1(con)
         return self.sig(self.final(con.flatten(start_dim=1)))
 
+#########################         #########################
 
-def _residual(in_channels, out_channels, kernel_size=3, stride=1, padding=1):
-    return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=False),
-        nn.BatchNorm2d(out_channels),
-        nn.ReLU()
-    )
-
-def _downsample(in_channels, out_channels, kernel_size=4, stride=2, padding=1):
-    #TODO add layer_1 boolean argument with if else conditions
-    #TODO figure out leaky relu 
-    return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=False),
-        nn.BatchNorm2d(out_channels),
-        nn.LeakyReLU()
-    )
-
-def _upsample(in_channels, out_channels, kernel_size=3, stride=1, padding=1):
-    return nn.Sequential(
-        nn.Upsample(scale_factor=2, mode='nearest'),
-        nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=False),
-        nn.BatchNorm2d(out_channels),
-        nn.ReLU()
-    )
 
 if __name__ == "__main__":
     batch_size = 2
     emb = torch.randn((batch_size, 768))
-    ca1 = CAug(768,128,'cpu')
+    # ca1 = CAug(768,128,'cpu')
     generator1 = Stage1Generator()
     ca2 = CAug(768,128,'cpu')
     generator2 = Stage2Generator()
@@ -265,10 +293,10 @@ if __name__ == "__main__":
     discriminator2 = Stage2Discriminator()
 
 
-    out_ca1 = ca1(emb)
-    print("ca1 output size: ", out_ca1.size())  # (batch_size, 128)
-    assert out_ca1.shape == (batch_size, 128)
-    gen1 = generator1(out_ca1) 
+    # out_ca1 = ca1(emb)
+    # print("ca1 output size: ", out_ca1.size())  # (batch_size, 128)
+    # assert out_ca1.shape == (batch_size, 128)
+    gen1, _, _ = generator1(emb) 
     print("output1 image dimensions :", gen1.size())  # (batch_size, 3, 64, 64)
     assert gen1.shape == (batch_size, 3, 64, 64)
     print()
@@ -278,7 +306,7 @@ if __name__ == "__main__":
     assert disc1.shape == (batch_size, 1)
     print()
 
-    out_ca2 = ca2(emb)
+    out_ca2, _, _ = ca2(emb)
     print("ca2 output size: ", out_ca2.size())  # (batch_size, 128)
     assert out_ca2.shape == (batch_size, 128)
     gen2 = generator2(out_ca2, gen1)
