@@ -90,7 +90,7 @@ def get_data_args():
 
     ###* Files: 
     add_birds_file_args(parser)
-    # add_cub_file_args(parser)
+    add_cub_file_args(parser)
 
     args = parser.parse_args()
     return args
