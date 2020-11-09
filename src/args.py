@@ -7,7 +7,12 @@ Authors:
 import argparse
 
 
-def get_parameters():
+def get_train_args():
+	""" train.py """
+	return None
+
+
+def get_parameters(parser):
     '''Get parameters and hyper parameter values'''
 
     parser = argparse.ArgumentParser("Parameter args")
