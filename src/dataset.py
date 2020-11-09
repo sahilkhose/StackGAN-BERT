@@ -11,32 +11,36 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
+import PIL
 import torch
+
+from PIL import Image
 print("__"*80)
 
 
 class CUBDataset(torch.utils.data.Dataset):
-    def __init__(self, pickl_file, emb_dir, img_dir, bbox_dir):
+    def __init__(self, pickl_file, emb_dir, img_dir):
         self.file_names = pd.read_pickle(pickl_file)
         self.emb_dir = emb_dir
         self.img_dir = img_dir
-        self.bbox_dir = bbox_dir
+        self.f_to_bbox = dict_bbox()
 
     def __len__(self):
         # Total number of samples
         return len(self.file_names)
 
     def __getitem__(self, index):
-        # Select sample
+        # Select sample:
         data_id = str(self.file_names[index])
-        print(data_id)
-        image = cv2.imread(os.path.join(self.img_dir, data_id) + ".jpg")
-        
-        # FIXME how to take text embedding input as each directory has 10 files
-        text_emb = torch.load(os.path.join(self.emb_dir, data_id)+"/0.pt", map_location="cpu")
-        image = torch.Tensor(cv2.imread(os.path.join(self.img_dir, data_id) + ".jpg"))
-        bbox 
-        return text_emb, image
+
+        # Fetch text emb, image, bbox:
+        idx = np.random.randint(0, 9)
+        text_emb = torch.load(os.path.join(self.emb_dir, data_id)+f"/{idx}.pt", map_location="cpu")
+
+        bbox = self.f_to_bbox[data_id]
+        image = get_img(img_path=os.path.join(self.img_dir, data_id) + ".jpg", bbox=bbox, image_size=(64, 64))
+
+        return text_emb, image, bbox
 
 
 def dict_bbox():
@@ -58,21 +62,36 @@ def dict_bbox():
     
     return filename_bbox
 
+def get_img(img_path, bbox, image_size):
+    """
+    Load and resize image
+    """
+    img = Image.open(img_path).convert('RGB')
+    width, height = img.size
+    if bbox is not None:
+        R = int(np.maximum(bbox[2], bbox[3]) * 0.75)
+        center_x = int((2 * bbox[0] + bbox[2]) / 2)
+        center_y = int((2 * bbox[1] + bbox[3]) / 2)
+        y1 = np.maximum(0, center_y - R)
+        y2 = np.minimum(height, center_y + R)
+        x1 = np.maximum(0, center_x - R)
+        x2 = np.minimum(width, center_x + R)
+        img = img.crop([x1, y1, x2, y2])
+    img = img.resize(image_size, PIL.Image.BILINEAR)
+    return img
 
 if __name__ == "__main__":
     data_args = args.get_data_args()
-    # train_filenames = data_args.train_filenames
-    # test_filenames = data_args.test_filenames
-    # dataset_test = CUBDataset(train_filenames, data_args.bert_annotations_dir, data_args.images_dir)
-    # t, i = dataset_test[1]
-    # print("Bert emb shape: ", t.shape)
-    # print("Image shape: ", i.shape)
-    
-    # plt.imshow(i)
-    # plt.show()
-    
+    train_filenames = data_args.train_filenames
+    test_filenames = data_args.test_filenames
+    dataset_test = CUBDataset(train_filenames, data_args.bert_annotations_dir, data_args.images_dir)
+    t, i, b = dataset_test[1]
+    print("Bert emb shape: ", t.shape)
+    print("bbox: ", b)
+    plt.imshow(i)
+    plt.show()
 
     ###########################################################
-    filename = "001.Black_footed_Albatross/Black_Footed_Albatross_0046_18"
-    f_to_bbox = dict_bbox()
-    print(f_to_bbox[filename])
+    # filename = "001.Black_footed_Albatross/Black_Footed_Albatross_0046_18"
+    # f_to_bbox = dict_bbox()
+    # print(f_to_bbox[filename])
