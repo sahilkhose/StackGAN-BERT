@@ -188,11 +188,16 @@ class Stage1Discriminator(nn.Module):
             # -> (batch, img_dim * 8, 4, 4)
             _downsample(img_dim*4, img_dim*8) # (batch, 512, 4, 4)
         )
-        # -> (batch, img_dim*8 + n_d)
-        self.conv1x1 = nn.Conv2d(img_dim*8 + self.n_d, img_dim*8 + self.n_d, kernel_size=1)
-        # -> (batch, 1)
-        self.final = nn.Linear(self.m_d * self.m_d * (self.n_d + (img_dim*8)), 1)
-        self.sig = nn.Sigmoid()
+
+        self.out_logits = nn.Sequential(
+        	# (batch, img_dim*8 + n_d, 4, 4) -> (batch, img_dim*8, 4, 4)
+        	conv3x3(img_dim*8 + self.n_d, img_dim*8),
+        	nn.BatchNorm2d(img_dim*8),
+        	nn.LeakyReLU(0.2, inplace=True),
+        	# -> (batch, 1)
+        	nn.Conv2d(img_dim*8, 1, kernel_size=4, stride=4),
+        	nn.Sigmoid()
+        	)
 
     def forward(self, text_emb, img):
         # image encode
@@ -204,8 +209,8 @@ class Stage1Discriminator(nn.Module):
 
         con = torch.cat((enc, compressed), dim=1)
 
-        con = self.conv1x1(con)
-        return self.sig(self.final(con.flatten(start_dim=1)))
+        output = self.out_logits(con)
+        return output.view(-1)
 
 
 ######################### STAGE 2 #########################
@@ -339,11 +344,16 @@ class Stage2Discriminator(nn.Module):
             nn.BatchNorm2d(img_dim * 2),
             nn.LeakyReLU(0.2, inplace=True)
         )
-        # -> (batch, img_dim*2 + n_d, 4, 4)
-        self.conv1x1 = nn.Conv2d(img_dim*2+self.n_d, img_dim*2+self.n_d, kernel_size=1)
-        # -> (batch, 1)
-        self.final = nn.Linear(self.m_d*self.m_d*(self.n_d+(img_dim*2)), 1)
-        self.sig = nn.Sigmoid()
+
+        self.out_logits = nn.Sequential(
+        	# (batch, img_dim*2 + n_d, 4, 4) -> (batch, img_dim*2, 4, 4)
+        	conv3x3(img_dim*2 + self.n_d, img_dim*2),
+        	nn.BatchNorm2d(img_dim*2),
+        	nn.LeakyReLU(0.2, inplace=True),
+        	# -> (batch, 1)
+        	nn.Conv2d(img_dim*2, 1, kernel_size=4, stride=4),
+        	nn.Sigmoid()
+        	)
 
     def forward(self, text_emb, img):
         # image encode
@@ -355,8 +365,8 @@ class Stage2Discriminator(nn.Module):
 
         con = torch.cat((enc, compressed), dim=1)
 
-        con = self.conv1x1(con)
-        return self.sig(self.final(con.flatten(start_dim=1)))
+        output = self.out_logits(con)
+        return output.view(-1)
 
 #########################         #########################
 
@@ -380,8 +390,8 @@ if __name__ == "__main__":
     print()
 
     disc1 = discriminator1(emb, gen1)
-    print("output1 discriminator", disc1.size())  # (batch_size, 1)
-    assert disc1.shape == (batch_size, 1)
+    print("output1 discriminator", disc1.size())  # (batch_size)
+    # assert disc1.shape == (batch_size)
     print()
 
     _, gen2, _, _ = generator2(emb, noise)
@@ -390,8 +400,8 @@ if __name__ == "__main__":
     print()
 
     disc2 = discriminator2(emb, gen2)
-    print("output2 discriminator", disc2.size())  # (batch_size, 1)
-    assert disc2.shape == (batch_size, 1)
+    print("output2 discriminator", disc2.size())  # (batch_size)
+    # assert disc2.shape == (batch_size)
     print()
     
     ca = CAug(768,128,'cpu')
