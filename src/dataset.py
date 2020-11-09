@@ -39,6 +39,26 @@ class CUBDataset(torch.utils.data.Dataset):
         return text_emb, image
 
 
+def dict_bbox():
+    """
+    returns filename to bbox dict
+    """
+    data_args = args.get_data_args()
+
+    df_bbox = pd.read_csv(data_args.bounding_boxes, delim_whitespace=True, header=None).astype(int)
+    df_filenames = pd.read_csv(data_args.images_id_file, delim_whitespace=True, header=None)
+
+    filenames = df_filenames[1].tolist()
+
+    filename_bbox = {}
+    for i in range(len(filenames)):
+        bbox = df_bbox.iloc[i][1:].tolist()
+        key = filenames[i].replace(".jpg", "")
+        filename_bbox[key] = bbox
+    
+    return filename_bbox
+
+
 if __name__ == "__main__":
     data_args = args.get_data_args()
     # train_filenames = data_args.train_filenames
@@ -53,23 +73,6 @@ if __name__ == "__main__":
     
 
     ###########################################################
-
-    ## Bounding box text file: len: 11788
-    ## <id> <x> <y> <width> <height>
-    bbox_file = open(data_args.bounding_boxes).read().split("\n")[:-1]
-    idx = 0
-    print(f"{bbox_file[idx].split()[0]} ({bbox_file[idx].split()[1]}, {bbox_file[idx].split()[2]}, {bbox_file[idx].split()[3]}, {bbox_file[idx].split()[4]})")
-
-    list_ids = [i+1 for i in range(len(bbox_file))]
-    list_coords = [(float(bbox_file[idx_].split()[1]), float(bbox_file[idx_].split()[2]), float(bbox_file[idx_].split()[3]), float(bbox_file[idx_].split()[4])) for idx_ in range(len(list_ids))]
-    print(list_ids[idx], list_coords[idx])
-
-    ## image id file:
-    ## <id> <filename.jpg>
-    image_id_file = open(data_args.images_id_file).read().split("\n")[:-1]
-    print(f'{image_id_file[idx].split()[0]} {image_id_file[idx].split()[-1].replace(".jpg", "")}')
-    list_fnames = [image_id_file[idx_].split()[-1].replace(".jpg", "") for idx_ in range(len(list_ids))]
-    print(list_ids[idx], list_fnames[idx])
-
-    print("image id of the filename is: ", list_ids[list_fnames.index("001.Black_footed_Albatross/Black_Footed_Albatross_0046_18")])
-    print("bbox coords of filename are: ", list_coords[list_fnames.index("001.Black_footed_Albatross/Black_Footed_Albatross_0046_18")])
+    filename = "001.Black_footed_Albatross/Black_Footed_Albatross_0046_18"
+    f_to_bbox = dict_bbox()
+    print(f_to_bbox[filename])
