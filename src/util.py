@@ -19,6 +19,12 @@ print("__"*80)
 #TODO fetch saved generated images during training and their corresponding annotations
 # annot = open(os.path.join(self.txt_dir, data_id + ".txt")).read().split("\n")[:-1]
 
+def save_rgb_img():
+	None
+
+def write_log():
+	None
+
 def check_args():
     """
     To test args.py
