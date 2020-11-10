@@ -14,6 +14,7 @@ import args
 # import config
 import dataset
 import engine
+import layers
 
 import matplotlib.pyplot as plt 
 import numpy as np
@@ -55,27 +56,41 @@ def run(args):
 
     # Setting up device
     # device = torch.device(args.get_parameters().device)
+    device = "cuda"
 
-    # # Load model
+    # Load model
     # load_file = config.MODEL_PATH + "7_model_15.bin"
-    # model = AmazingModel()
+    generator1 = layers.Stage1Generator()
+    generator2 = layers.Stage2Generator()
+
+    discriminator1 = layers.Stage1Discriminator()
+    discriminator2 = layers.Stage2Discriminator()
+
     # if os.path.exists(load_file):
     #     model.load_state_dict(torch.load(load_file))
-    # model.to(device)
+    generator1.to(device)
+    generator2.to(device)
+    discriminator1.to(device)
+    discriminator2.to(device)
 
-    # # Setting up training
+    # Setting up training
     # num_train_steps = int(len(id_train) / config.TRAIN_BATCH_SIZE * config.EPOCHS)
     # optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-    # best_accuracy = 0
+    best_accuracy = 0
 
-    # # Main training loop
-    # for epoch in range(1, config.EPOCHS+1): 
-    #     # Running train, valid, test loop every epoch
-    #     print("__"*80)
-    #     loss = engine.train_fn(train_data_loader, model, optimizer, device, epoch)
-    #     outputs_v, targets_v, loss_v = engine.eval_fn(valid_data_loader, model, device, epoch)
-    #     outputs_t, targets_t, loss_t = engine.eval_fn(test_data_loader, model, device, epoch)
+    # Main training loop
+    for epoch in range(1, config.EPOCHS+1): 
+        # Running train, valid, test loop every epoch
+        print("__"*80)
+        d_loss, g_loss = train_fn(train_data_loader, discriminator1, generator1, device, epoch)
+        print("losses: ", d_loss, g_loss)
+        break
+
+
+        # loss = engine.train_fn(train_data_loader, model, optimizer, device, epoch)
+        # outputs_v, targets_v, loss_v = engine.eval_fn(valid_data_loader, model, device, epoch)
+        # outputs_t, targets_t, loss_t = engine.eval_fn(test_data_loader, model, device, epoch)
 
     #     # Printing losses
     #     print(f"Epoch {epoch} Training Loss: {loss}")

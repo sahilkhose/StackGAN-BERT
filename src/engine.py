@@ -30,10 +30,12 @@ def gen_loss(disc, fake_imgs, real_labels, conditional_vector):
     return fake_loss
 
 
-def train_fn(data_loader, Discriminator, Generator, optimizer, device, epoch): 
+def train_fn(data_loader, Discriminator, Generator, device, epoch): 
     Discriminator.train()
     Generator.train()
     #LOSS = 0.
+    DISC_LOSS = 0.
+    GEN_LOSS = 0.
     lr = 0.0002 # TODO decay this every 100 epochs by 0.5
     optimG = torch.optim.Adam(Generator.parameters(), lr, betas=(0.5, 0.999)) # Beta value from github impl
     optimD = torch.optim.Adam(Discriminator.parameters(), lr, betas=(0.5, 0.999))
@@ -47,12 +49,16 @@ def train_fn(data_loader, Discriminator, Generator, optimizer, device, epoch):
 
         # ROUGH TRAIN
          # TODO create noise here
-        noise  = torch.Tensor()
+        # noise  = torch.Tensor()
+        batch_size = text_embs.shape[0]
+        print(batch_size)
+        noise = torch.empty((batch_size, n_z)).normal_()
         _, fake, mu, logvar = Generator(text_embs, noise)
 
          # TODO create real_labels, fake_labels, d1 takes as input text_emb as input, how do we pass mu :/
         Discriminator.zero_grad()
         loss_disc = disc_loss(Discriminator, images, fake, real_labels, fake_labels, mu)
+        DISC_LOSS += loss_disc.detach()
         loss_disc.backward()
         optimD.step()
 
@@ -60,11 +66,26 @@ def train_fn(data_loader, Discriminator, Generator, optimizer, device, epoch):
         loss_gen = gen_loss(Discriminator, fake, real_labels, mu)
         kl = KL_loss(mu, logvar)
         generator_loss = loss_gen + args.kl_hyperparam*kl # TODO add this arg, this the lambda in the paper
+        GEN_LOSS += generator_loss.detach()
         generator_loss.backward()
         optimG.step()
 
-    LOSS /= len(data_loader) # XXX why
-    return LOSS # XXX why
+        break
+
+    DISC_LOSS /= len(data_loader) # XXX why
+    GEN_LOSS /= len(data_loader)
+    return DISC_LOSS, GEN_LOSS # XXX why
+
+
+
+
+
+
+
+
+
+
+
 
 def eval_fn(data_loader, model, device, epoch):
     model.eval()

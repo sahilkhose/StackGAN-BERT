@@ -40,7 +40,7 @@ class CUBDataset(torch.utils.data.Dataset):
         bbox = self.f_to_bbox[data_id]
         image = get_img(img_path=os.path.join(self.img_dir, data_id) + ".jpg", bbox=bbox, image_size=(64, 64))
 
-        return text_emb, image, bbox
+        return text_emb, image
 
 
 def dict_bbox():
@@ -85,9 +85,10 @@ if __name__ == "__main__":
     train_filenames = data_args.train_filenames
     test_filenames = data_args.test_filenames
     dataset_test = CUBDataset(train_filenames, data_args.bert_annotations_dir, data_args.images_dir)
-    t, i, b = dataset_test[1]
+    # t, i, b = dataset_test[1]
+    t, i = dataset_test[1]
     print("Bert emb shape: ", t.shape)
-    print("bbox: ", b)
+    # print("bbox: ", b)
     plt.imshow(i)
     plt.show()
 
