@@ -14,6 +14,8 @@ import pandas as pd
 import PIL
 import torch
 
+from torchvision import transforms
+
 from PIL import Image
 print("__"*80)
 
@@ -39,6 +41,8 @@ class CUBDataset(torch.utils.data.Dataset):
 
         bbox = self.f_to_bbox[data_id]
         image = get_img(img_path=os.path.join(self.img_dir, data_id) + ".jpg", bbox=bbox, image_size=(64, 64))
+        # image = torch.tensor(np.array(image), dtype=torch.float)
+        image = transforms.ToTensor()(image)
 
         return text_emb, image
 

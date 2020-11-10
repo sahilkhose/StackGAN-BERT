@@ -44,11 +44,11 @@ def run(args):
 
 
     training_set = dataset.CUBDataset(pickl_file=args.train_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
-    train_data_loader = torch.utils.data.DataLoader(training_set, batch_size=1, num_workers=1)
+    train_data_loader = torch.utils.data.DataLoader(training_set, batch_size=2, num_workers=1)
     # check_dataset(training_set)
     print("__"*80)
     testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
-    test_data_loader = torch.utils.data.DataLoader(testing_set, batch_size=1, num_workers=1)
+    test_data_loader = torch.utils.data.DataLoader(testing_set, batch_size=2, num_workers=1)
     # check_dataset(testing_set)
 
 
@@ -80,10 +80,10 @@ def run(args):
     best_accuracy = 0
 
     # Main training loop
-    for epoch in range(1, config.EPOCHS+1): 
+    for epoch in range(1, 10): #config.EPOCHS+1): 
         # Running train, valid, test loop every epoch
         print("__"*80)
-        d_loss, g_loss = train_fn(train_data_loader, discriminator1, generator1, device, epoch)
+        d_loss, g_loss = engine.train_fn(train_data_loader, discriminator1, generator1, device, epoch)
         print("losses: ", d_loss, g_loss)
         break
 

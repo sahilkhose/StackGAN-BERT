@@ -40,8 +40,9 @@ def train_fn(data_loader, Discriminator, Generator, device, epoch):
     optimG = torch.optim.Adam(Generator.parameters(), lr, betas=(0.5, 0.999)) # Beta value from github impl
     optimD = torch.optim.Adam(Discriminator.parameters(), lr, betas=(0.5, 0.999))
 
-    for batch_id, data in tqdm(enumerate(data_loader), total=len(data_loader), desc=f"Train Epoch {epoch}/{config.EPOCHS}"):
+    for batch_id, data in tqdm(enumerate(data_loader), total=len(data_loader)): #, desc=f"Train Epoch {epoch}/{config.EPOCHS}"):
         text_embs, images = data
+        images = torch.tensor(images)
 
         # Loading it to device
         text_embs = text_embs.to(device, dtype=torch.float)
@@ -51,24 +52,25 @@ def train_fn(data_loader, Discriminator, Generator, device, epoch):
          # TODO create noise here
         # noise  = torch.Tensor()
         batch_size = text_embs.shape[0]
-        print(batch_size)
+        print("batch_size:", batch_size)
+        n_z = 100
         noise = torch.empty((batch_size, n_z)).normal_()
-        _, fake, mu, logvar = Generator(text_embs, noise)
+        _, fake, mu, logvar = Generator(text_embs, noise.to(device, dtype=torch.float))
 
          # TODO create real_labels, fake_labels, d1 takes as input text_emb as input, how do we pass mu :/
-        Discriminator.zero_grad()
-        loss_disc = disc_loss(Discriminator, images, fake, real_labels, fake_labels, mu)
-        DISC_LOSS += loss_disc.detach()
-        loss_disc.backward()
-        optimD.step()
+        # Discriminator.zero_grad()
+        # loss_disc = disc_loss(Discriminator, images, fake, real_labels, fake_labels, mu)
+        # DISC_LOSS += loss_disc.detach()
+        # loss_disc.backward()
+        # optimD.step()
 
-        Generator.zero_grad()
-        loss_gen = gen_loss(Discriminator, fake, real_labels, mu)
-        kl = KL_loss(mu, logvar)
-        generator_loss = loss_gen + args.kl_hyperparam*kl # TODO add this arg, this the lambda in the paper
-        GEN_LOSS += generator_loss.detach()
-        generator_loss.backward()
-        optimG.step()
+        # Generator.zero_grad()
+        # loss_gen = gen_loss(Discriminator, fake, real_labels, mu)
+        # kl = KL_loss(mu, logvar)
+        # generator_loss = loss_gen + args.kl_hyperparam*kl # TODO add this arg, this the lambda in the paper
+        # GEN_LOSS += generator_loss.detach()
+        # generator_loss.backward()
+        # optimG.step()
 
         break
 

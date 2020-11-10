@@ -66,7 +66,7 @@ class CAug(nn.Module):
     """Module for conditional augmentation.
     Takes input as bert embeddings of annotations and sends output to Stage 1 and 2 generators.
     """
-    def __init__ (self, bert_dim=768, n_g=128, device="cpu"): #! CHANGE THIS TO CUDA
+    def __init__ (self, bert_dim=768, n_g=128, device="cuda"): #! CHANGE THIS TO CUDA
         """
         @param bert_dim (int)           : Size of bert annotation embeddings. 
         @param n_g      (int)           : Dimension of mu, epsilon and c_0_hat
@@ -84,19 +84,16 @@ class CAug(nn.Module):
         @param   text_emb (torch.tensor): Text embedding.                 (batch, bert_dim)
         @returns c_0_hat  (torch.tensor): Gaussian conditioning variable. (batch, n_g)
         """
-        enc = self.relu(self.fc(text_emb))  # (batch, n_g*2)
+        enc = self.relu(self.fc(text_emb)).squeeze(1)  # (batch, n_g*2)
 
         mu = enc[:, :self.n_g]  # (batch, n_g)
         logvar = enc[:, self.n_g:]  # (batch, n_g)
 
         sigma = (logvar * 0.5).exp_()  # exp(logvar * 0.5) = exp(log(var^0.5)) = sqrt(var) = std 
 
-        if self.device==torch.cuda:
-            epsilon = Variable(torch.cuda.FloatTensor(sigma.size()).normal_())
-        else:
-            epsilon = Variable(torch.FloatTensor(sigma.size()).normal_())
+        epsilon = Variable(torch.FloatTensor(sigma.size()).normal_())
 
-        c_0_hat = epsilon * sigma + mu  # (batch, n_g)
+        c_0_hat = epsilon.to(self.device) * sigma + mu  # (batch, n_g)
 
         return c_0_hat, mu, logvar
 
