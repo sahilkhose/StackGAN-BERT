@@ -38,7 +38,8 @@ class CUBDataset(torch.utils.data.Dataset):
         # Fetch text emb, image, bbox:
         idx = np.random.randint(0, 9)
         text_emb = torch.load(os.path.join(self.emb_dir, data_id)+f"/{idx}.pt", map_location="cpu")
-
+        text_emb = text_emb.squeeze(0)
+        
         bbox = self.f_to_bbox[data_id]
         image = get_img(img_path=os.path.join(self.img_dir, data_id) + ".jpg", bbox=bbox, image_size=(64, 64))
         # image = torch.tensor(np.array(image), dtype=torch.float)

@@ -56,7 +56,7 @@ def run(args):
 
     # Setting up device
     # device = torch.device(args.get_parameters().device)
-    device = "cuda"
+    device = "cpu"
 
     # Load model
     # load_file = config.MODEL_PATH + "7_model_15.bin"
@@ -75,7 +75,9 @@ def run(args):
 
     # Setting up training
     # num_train_steps = int(len(id_train) / config.TRAIN_BATCH_SIZE * config.EPOCHS)
-    # optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    lr = 0.0002 # TODO decay this every 100 epochs by 0.5
+    optimG1 = torch.optim.Adam(generator1.parameters(), lr, betas=(0.5, 0.999)) # Beta value from github impl
+    optimD1 = torch.optim.Adam(discriminator1.parameters(), lr, betas=(0.5, 0.999))
 
     best_accuracy = 0
 
@@ -83,7 +85,7 @@ def run(args):
     for epoch in range(1, 10): #config.EPOCHS+1): 
         # Running train, valid, test loop every epoch
         print("__"*80)
-        d_loss, g_loss = engine.train_fn(train_data_loader, discriminator1, generator1, device, epoch)
+        d_loss, g_loss = engine.train_fn(train_data_loader, discriminator1, generator1, optimD1, optimG1, device, epoch)
         print("losses: ", d_loss, g_loss)
         break
 
