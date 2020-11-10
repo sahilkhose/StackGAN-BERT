@@ -39,8 +39,72 @@ def check_dataset(training_set):
     plt.show()
 
 
+def load_stage1():
+	#* Init models and weights:
+	from layers import Stage1Generator, Stage1Discriminator
+	netG = Stage1Generator()
+	### TODO weights init
+	netG.apply(weights_init)
 
-def run(args):
+	netD = Stage1Discriminator()
+	netD.apply(weights_init)
+
+
+	#* Load saved model:
+	if args.NET_G_path != "":
+		netG.load_state_dict(torch.load(args.NET_G_path)) #? map_location in codebase?
+		print("Generator loaded from: ", args.NET_G_path)
+	if args.NET_D_path != "":
+		netD.load_state_dict(torch.load(args.NET_D_path)) #? map_location in codebase?
+		print("Generator loaded from: ", args.NET_D_path)
+
+	#* Load on device:
+	if args.CUDA:
+		netG.cuda()
+		netD.cuda()
+
+	print(netG)
+	print(netD)
+
+	return netG, netD
+
+def load_stage2():
+	#* Init models and weights:
+	from layers import Stage2Generator, Stage2Discriminator, Stage1Generator
+	Stage1_G = Stage1Generator()
+	netG = Stage2Generator(Stage1_G)
+	### TODO weights init
+	netG.apply(weights_init)
+
+	netD = Stage2Discriminator()
+	netD.apply(weights_init)
+
+
+	#* Load saved model:
+	if args.NET_G_path != "":
+		netG.load_state_dict(torch.load(args.NET_G_path)) #? map_location in codebase?
+		print("Generator loaded from: ", args.NET_G_path)
+	if args.NET_D_path != "":
+		netD.load_state_dict(torch.load(args.NET_D_path)) #? map_location in codebase?
+		print("Generator loaded from: ", args.NET_D_path)
+
+	#* Load on device:
+	if args.CUDA:
+		netG.cuda()
+		netD.cuda()
+
+	print(netG)
+	print(netD)
+
+	return netG, netD
+
+
+def run(args, stage):
+
+	if stage == 1:
+		netG, netD = load_stage1() 
+	else: 
+		netG, netD = load_stage2()
 
 
     training_set = dataset.CUBDataset(pickl_file=args.train_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
@@ -142,4 +206,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    run(args.get_data_args())
+    run(args.get_data_args(). stage=1)
