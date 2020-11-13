@@ -16,7 +16,7 @@ import dataset
 import engine
 import layers
 
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
@@ -31,6 +31,7 @@ from sklearn import model_selection
 print("__"*80)
 print("Imports Done...")
 
+
 def check_dataset(training_set):
     t, i, b = training_set[1]
     print("Bert emb shape: ", t.shape)
@@ -40,83 +41,86 @@ def check_dataset(training_set):
 
 
 def load_stage1():
-	#* Init models and weights:
-	from layers import Stage1Generator, Stage1Discriminator
-	netG = Stage1Generator()
-	### TODO weights init
-	netG.apply(weights_init)
+    #* Init models and weights:
+    from layers import Stage1Generator, Stage1Discriminator
+    netG = Stage1Generator()
+    ### TODO weights init
+    netG.apply(weights_init)
 
-	netD = Stage1Discriminator()
-	netD.apply(weights_init)
+    netD = Stage1Discriminator()
+    netD.apply(weights_init)
 
+    #* Load saved model:
+    if args.NET_G_path != "":
+        # ? map_location in codebase?
+        netG.load_state_dict(torch.load(args.NET_G_path))
+        print("Generator loaded from: ", args.NET_G_path)
+    if args.NET_D_path != "":
+        # ? map_location in codebase?
+        netD.load_state_dict(torch.load(args.NET_D_path))
+        print("Generator loaded from: ", args.NET_D_path)
 
-	#* Load saved model:
-	if args.NET_G_path != "":
-		netG.load_state_dict(torch.load(args.NET_G_path)) #? map_location in codebase?
-		print("Generator loaded from: ", args.NET_G_path)
-	if args.NET_D_path != "":
-		netD.load_state_dict(torch.load(args.NET_D_path)) #? map_location in codebase?
-		print("Generator loaded from: ", args.NET_D_path)
+    #* Load on device:
+    if args.CUDA:
+        netG.cuda()
+        netD.cuda()
 
-	#* Load on device:
-	if args.CUDA:
-		netG.cuda()
-		netD.cuda()
+    print(netG)
+    print(netD)
 
-	print(netG)
-	print(netD)
+    return netG, netD
 
-	return netG, netD
 
 def load_stage2():
-	#* Init models and weights:
-	from layers import Stage2Generator, Stage2Discriminator, Stage1Generator
-	Stage1_G = Stage1Generator()
-	netG = Stage2Generator(Stage1_G)
-	### TODO weights init
-	netG.apply(weights_init)
+    #* Init models and weights:
+    from layers import Stage2Generator, Stage2Discriminator, Stage1Generator
+    Stage1_G = Stage1Generator()
+    netG = Stage2Generator(Stage1_G)
+    ### TODO weights init
+    netG.apply(weights_init)
 
-	netD = Stage2Discriminator()
-	netD.apply(weights_init)
+    netD = Stage2Discriminator()
+    netD.apply(weights_init)
 
+    #* Load saved model:
+    if args.NET_G_path != "":
+        # ? map_location in codebase?
+        netG.load_state_dict(torch.load(args.NET_G_path))
+        print("Generator loaded from: ", args.NET_G_path)
+    if args.NET_D_path != "":
+        # ? map_location in codebase?
+        netD.load_state_dict(torch.load(args.NET_D_path))
+        print("Generator loaded from: ", args.NET_D_path)
 
-	#* Load saved model:
-	if args.NET_G_path != "":
-		netG.load_state_dict(torch.load(args.NET_G_path)) #? map_location in codebase?
-		print("Generator loaded from: ", args.NET_G_path)
-	if args.NET_D_path != "":
-		netD.load_state_dict(torch.load(args.NET_D_path)) #? map_location in codebase?
-		print("Generator loaded from: ", args.NET_D_path)
+    #* Load on device:
+    if args.CUDA:
+        netG.cuda()
+        netD.cuda()
 
-	#* Load on device:
-	if args.CUDA:
-		netG.cuda()
-		netD.cuda()
+    print(netG)
+    print(netD)
 
-	print(netG)
-	print(netD)
-
-	return netG, netD
+    return netG, netD
 
 
 def run(args, stage):
 
-	if stage == 1:
-		netG, netD = load_stage1() 
-	else: 
-		netG, netD = load_stage2()
+    if stage == 1:
+        netG, netD = load_stage1()
+    else:
+        netG, netD = load_stage2()
 
-
-    training_set = dataset.CUBDataset(pickl_file=args.train_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
-    train_data_loader = torch.utils.data.DataLoader(training_set, batch_size=2, num_workers=1)
+    training_set = dataset.CUBDataset(
+        pickl_file=args.train_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
+    train_data_loader = torch.utils.data.DataLoader(
+        training_set, batch_size=2, num_workers=1)
     # check_dataset(training_set)
     print("__"*80)
-    testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
-    test_data_loader = torch.utils.data.DataLoader(testing_set, batch_size=2, num_workers=1)
+    testing_set = dataset.CUBDataset(
+        pickl_file=args.test_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
+    test_data_loader = torch.utils.data.DataLoader(
+        testing_set, batch_size=2, num_workers=1)
     # check_dataset(testing_set)
-
-
-
 
     # Setting up device
     # device = torch.device(args.get_parameters().device)
@@ -139,20 +143,22 @@ def run(args, stage):
 
     # Setting up training
     # num_train_steps = int(len(id_train) / config.TRAIN_BATCH_SIZE * config.EPOCHS)
-    lr = 0.0002 # TODO decay this every 100 epochs by 0.5
-    optimG1 = torch.optim.Adam(generator1.parameters(), lr, betas=(0.5, 0.999)) # Beta value from github impl
-    optimD1 = torch.optim.Adam(discriminator1.parameters(), lr, betas=(0.5, 0.999))
+    lr = 0.0002  # TODO decay this every 100 epochs by 0.5
+    optimG1 = torch.optim.Adam(generator1.parameters(), lr, betas=(
+        0.5, 0.999))  # Beta value from github impl
+    optimD1 = torch.optim.Adam(
+        discriminator1.parameters(), lr, betas=(0.5, 0.999))
 
     best_accuracy = 0
 
     # Main training loop
-    for epoch in range(1, 10): #config.EPOCHS+1): 
+    for epoch in range(1, 10):  # config.EPOCHS+1):
         # Running train, valid, test loop every epoch
         print("__"*80)
-        d_loss, g_loss = engine.train_fn(train_data_loader, discriminator1, generator1, optimD1, optimG1, device, epoch)
+        d_loss, g_loss = engine.train_fn(
+            train_data_loader, discriminator1, generator1, optimD1, optimG1, device, epoch)
         print("losses: ", d_loss, g_loss)
         break
-
 
         # loss = engine.train_fn(train_data_loader, model, optimizer, device, epoch)
         # outputs_v, targets_v, loss_v = engine.eval_fn(valid_data_loader, model, device, epoch)
@@ -206,4 +212,4 @@ def run(args, stage):
 
 
 if __name__ == "__main__":
-    run(args.get_data_args(). stage=1)
+    run(args.get_data_args(), stage=1)

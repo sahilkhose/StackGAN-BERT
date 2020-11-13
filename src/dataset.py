@@ -90,11 +90,10 @@ if __name__ == "__main__":
     train_filenames = data_args.train_filenames
     test_filenames = data_args.test_filenames
     dataset_test = CUBDataset(train_filenames, data_args.bert_annotations_dir, data_args.images_dir)
-    # t, i, b = dataset_test[1]
     t, i = dataset_test[1]
     print("Bert emb shape: ", t.shape)
-    # print("bbox: ", b)
-    plt.imshow(i)
+    print("Image shape: ", i.shape)
+    plt.imshow(i.permute(1, 2, 0))
     plt.show()
 
     ###########################################################
