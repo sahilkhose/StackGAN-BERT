@@ -94,7 +94,7 @@ if __name__ == "__main__":
     # print("Max length of annotations: ", max_len())  # 80
     
     # Generate sentence embeddings:
-    if os.path.exists(config.ANNOTATION_EMB) and len(os.listdir(config.ANNOTATION_EMB)) == len(os.listdir(config.IMAGE_DIR)):
+    if os.path.exists(config.ANNOTATION_EMB) and len(os.listdir(config.ANNOTATION_EMB)) == len(os.listdir(config.IMAGE_DIR)):  # checking if we have all the embeddings folders created already
         print("Bert embeddings already exist. Skipping...")
     else:
         print("Generating bert embs...")
