@@ -22,8 +22,19 @@ def get_all_args():
 
 
 def get_train_args(parser):
-	""" train.py """
-	# return None
+    """ train.py """
+    parser.add_argument("--NET_G_path",
+                        type=str,
+                        default="",
+                        help="Generator model loading path")
+    parser.add_argument("--NET_D_path",
+                        type=str,
+                        default="",
+                        help="Discriminator model loading path")
+    parser.add_argument("--STAGE1_G_path",
+                        type=str,
+                        default="",
+                        help="Stage 1 Generator model path for Stage 2 training")
 
 
 def get_parameters(parser):
@@ -32,7 +43,7 @@ def get_parameters(parser):
     # parser = argparse.ArgumentParser("Parameter args")
     parser.add_argument("--device",
                         type=str,
-                        default="cuda",
+                        default="cpu", #! CHANGE THIS TO CUDA BEFORE TRAINING
                         help="Device type: cuda/cpu")
 
     # args = parser.parse_args()

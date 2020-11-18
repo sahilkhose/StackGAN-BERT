@@ -12,8 +12,8 @@ import pandas as pd
 import torch
 
 from json import dumps
-print("__"*80)
-print("Imports Done... \n")
+# print("__"*80)
+# print("Imports Done... \n")
 print("__"*80)
 
 #TODO fetch saved generated images during training and their corresponding annotations
@@ -29,18 +29,13 @@ def check_args():
     """
     To test args.py
     """
-    print("get_parameters:")
-    param_args = args.get_parameters()
-    print(f'Args: {dumps(vars(param_args), indent=4, sort_keys=True)}')
-    print("__"*80)
-
     print("get_data_args:")
-    data_args = args.get_data_args()
+    data_args = args.get_all_args()
     print(f'Args: {dumps(vars(data_args), indent=4, sort_keys=True)}')
     print("__"*80)
 
     print("To fetch arguments:")
-    print(param_args.device)
+    print(data_args.device)
     print(data_args.images_dir)
     print("__"*80)
 

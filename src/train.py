@@ -41,11 +41,10 @@ def check_dataset(training_set):
     plt.show()
 
 
-def load_stage1():
+def load_stage1(args):
     #* Init models and weights:
     from layers import Stage1Generator, Stage1Discriminator
     netG = Stage1Generator()
-    ### TODO weights init
     netG.apply(engine.weights_init)
 
     netD = Stage1Discriminator()
@@ -53,31 +52,31 @@ def load_stage1():
 
     #* Load saved model:
     if args.NET_G_path != "":
-        # ? map_location in codebase?
         netG.load_state_dict(torch.load(args.NET_G_path))
         print("Generator loaded from: ", args.NET_G_path)
     if args.NET_D_path != "":
-        # ? map_location in codebase?
         netD.load_state_dict(torch.load(args.NET_D_path))
-        print("Generator loaded from: ", args.NET_D_path)
+        print("Discriminator loaded from: ", args.NET_D_path)
 
     #* Load on device:
-    if args.CUDA:
+    if args.device == "cuda":
         netG.cuda()
         netD.cuda()
 
+    print("__"*80)
     print(netG)
+    print("__"*80)
     print(netD)
+    print("__"*80)
 
     return netG, netD
 
 
-def load_stage2():
+def load_stage2(args):
     #* Init models and weights:
     from layers import Stage2Generator, Stage2Discriminator, Stage1Generator
     Stage1_G = Stage1Generator()
     netG = Stage2Generator(Stage1_G)
-    ### TODO weights init
     netG.apply(engine.weights_init)
 
     netD = Stage2Discriminator()
@@ -85,21 +84,28 @@ def load_stage2():
 
     #* Load saved model:
     if args.NET_G_path != "":
-        # ? map_location in codebase?
         netG.load_state_dict(torch.load(args.NET_G_path))
         print("Generator loaded from: ", args.NET_G_path)
+    elif args.STAGE1_G_path != "":
+        netG.Stage1_G.load_state_dict(torch.load(args.STAGE1_G_path))
+        print("Generator loaded from: ", args.STAGE1_G_path)
+    else:
+        print("Please give the Stage 1 generator path")
+    
     if args.NET_D_path != "":
-        # ? map_location in codebase?
         netD.load_state_dict(torch.load(args.NET_D_path))
-        print("Generator loaded from: ", args.NET_D_path)
+        print("Discriminator loaded from: ", args.NET_D_path)
 
     #* Load on device:
-    if args.CUDA:
+    if args.device == "cuda":
         netG.cuda()
         netD.cuda()
 
+    print("__"*80)
     print(netG)
+    print("__"*80)
     print(netD)
+    print("__"*80)
 
     return netG, netD
 
@@ -107,25 +113,20 @@ def load_stage2():
 def run(args, stage):
 
     if stage == 1:
-        netG, netD = load_stage1()
+        netG, netD = load_stage1(args)
     else:
-        netG, netD = load_stage2()
+        netG, netD = load_stage2(args)
 
-    training_set = dataset.CUBDataset(
-        pickl_file=args.train_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
-    train_data_loader = torch.utils.data.DataLoader(
-        training_set, batch_size=2, num_workers=1)
+    training_set = dataset.CUBDataset(pickl_file=args.train_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
+    train_data_loader = torch.utils.data.DataLoader(training_set, batch_size=2, num_workers=1)
     # check_dataset(training_set)
-    print("__"*80)
-    testing_set = dataset.CUBDataset(
-        pickl_file=args.test_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
-    test_data_loader = torch.utils.data.DataLoader(
-        testing_set, batch_size=2, num_workers=1)
+    # print("__"*80)
+    testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
+    test_data_loader = torch.utils.data.DataLoader(testing_set, batch_size=2, num_workers=1)
     # check_dataset(testing_set)
 
     # Setting up device
-    # device = torch.device(args.get_parameters().device)
-    device = "cpu"
+    device = torch.device(args.device)
 
     # Load model
     # load_file = config.MODEL_PATH + "7_model_15.bin"
@@ -145,10 +146,8 @@ def run(args, stage):
     # Setting up training
     # num_train_steps = int(len(id_train) / config.TRAIN_BATCH_SIZE * config.EPOCHS)
     lr = 0.0002  # TODO decay this every 100 epochs by 0.5
-    optimG1 = torch.optim.Adam(generator1.parameters(), lr, betas=(
-        0.5, 0.999))  # Beta value from github impl
-    optimD1 = torch.optim.Adam(
-        discriminator1.parameters(), lr, betas=(0.5, 0.999))
+    optimG1 = torch.optim.Adam(generator1.parameters(), lr, betas=(0.5, 0.999))  # Beta value from github impl
+    optimD1 = torch.optim.Adam(discriminator1.parameters(), lr, betas=(0.5, 0.999))
 
     best_accuracy = 0
 
