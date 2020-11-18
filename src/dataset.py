@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
+import pickle
 import PIL
 import torch
 
@@ -21,11 +22,12 @@ print("__"*80)
 
 
 class CUBDataset(torch.utils.data.Dataset):
-    def __init__(self, pickl_file, emb_dir, img_dir):
+    def __init__(self, pickl_file, emb_dir, img_dir, cnn_embeddings=None):
         self.file_names = pd.read_pickle(pickl_file)
         self.emb_dir = emb_dir
         self.img_dir = img_dir
         self.f_to_bbox = dict_bbox()
+        self.cnn_embeddings = cnn_embeddings  # to switch to cnn-rnn embeddings
 
     def __len__(self):
         # Total number of samples
@@ -37,8 +39,11 @@ class CUBDataset(torch.utils.data.Dataset):
 
         # Fetch text emb, image, bbox:
         idx = np.random.randint(0, 9)
-        text_emb = torch.load(os.path.join(self.emb_dir, data_id)+f"/{idx}.pt", map_location="cpu")
-        text_emb = text_emb.squeeze(0)
+        if self.cnn_embeddings is not None:
+            text_emb = torch.tensor(self.cnn_embeddings[index][idx], dtype=torch.float)  # (1024)
+        else:
+            text_emb = torch.load(os.path.join(self.emb_dir, data_id)+f"/{idx}.pt", map_location="cpu")
+            text_emb = text_emb.squeeze(0)  # (768)
         
         bbox = self.f_to_bbox[data_id]
         image = get_img(img_path=os.path.join(self.img_dir, data_id) + ".jpg", bbox=bbox, image_size=(64, 64))
@@ -52,7 +57,7 @@ def dict_bbox():
     """
     returns filename to bbox dict
     """
-    data_args = args.get_data_args()
+    data_args = args.get_all_args()
 
     df_bbox = pd.read_csv(data_args.bounding_boxes, delim_whitespace=True, header=None).astype(int)
     df_filenames = pd.read_csv(data_args.images_id_file, delim_whitespace=True, header=None)
@@ -86,12 +91,26 @@ def get_img(img_path, bbox, image_size):
     return img
 
 if __name__ == "__main__":
-    data_args = args.get_data_args()
+    data_args = args.get_all_args()
     train_filenames = data_args.train_filenames
     test_filenames = data_args.test_filenames
-    dataset_test = CUBDataset(train_filenames, data_args.bert_annotations_dir, data_args.images_dir)
+
+    bert_embed = False
+
+    if bert_embed:
+        ###* Bert embeddings dataset:
+        dataset_test = CUBDataset(train_filenames, data_args.bert_annotations_dir, data_args.images_dir)
+    else:
+        ###* cnn-rnn embeddings dataset:
+        cnn_embeddings = np.array(pickle.load(open(data_args.cnn_annotations_emb_train, "rb"), encoding='latin1'))
+        dataset_test = CUBDataset(train_filenames, data_args.bert_annotations_dir, data_args.images_dir, cnn_embeddings)
+
+
     t, i = dataset_test[1]
-    print("Bert emb shape: ", t.shape)
+    if bert_embed:
+        print("Bert emb shape: ", t.shape)
+    else: 
+        print("rnn-cnn emb shape: ", t.shape)
     print("Image shape: ", i.shape)
     plt.imshow(i.permute(1, 2, 0))
     plt.show()
