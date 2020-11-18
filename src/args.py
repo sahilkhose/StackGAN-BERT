@@ -7,30 +7,44 @@ Authors:
 import argparse
 
 
-def get_train_args():
-	""" train.py """
-	return None
+def get_all_args():
+    """Get all parameters"""
 
+    parser = argparse.ArgumentParser("Arguments")
 
-def get_parameters(parser):
-    '''Get parameters and hyper parameter values'''
-
-    parser = argparse.ArgumentParser("Parameter args")
-    parser.add_argument("--device",
-                        type=str,
-                        default="cuda",
-                        help="Device type: cuda/cpu")
+    get_train_args(parser)
+    get_parameters(parser)
+    get_model_params(parser)
+    get_data_args(parser)
 
     args = parser.parse_args()
     return args
 
 
-def get_model_params():
+def get_train_args(parser):
+	""" train.py """
+	# return None
+
+
+def get_parameters(parser):
+    '''Get parameters and hyper parameter values'''
+
+    # parser = argparse.ArgumentParser("Parameter args")
+    parser.add_argument("--device",
+                        type=str,
+                        default="cuda",
+                        help="Device type: cuda/cpu")
+
+    # args = parser.parse_args()
+    # return args
+
+
+def get_model_params(parser):
     """
     Refer to StackGAN paper: https://arxiv.org/pdf/1612.03242.pdf 
     for parameter names.
     """
-    parser = argparse.ArgumentParser("Model parameters")
+    # parser = argparse.ArgumentParser("Model parameters")
     parser.add_argument("--n_g",
                         type=int,
                         default=128,
@@ -68,13 +82,13 @@ def get_model_params():
                         default=256,
                         help="")
 
-    args = parser.parse_args()
-    return args
+    # args = parser.parse_args()
+    # return args
 
-def get_data_args():
+def get_data_args(parser):
     '''Get all data paths'''
 
-    parser = argparse.ArgumentParser("Data path args")
+    # parser = argparse.ArgumentParser("Data path args")
     ###* Directories:
     parser.add_argument("--annotations_dir",
                         type=str,
@@ -97,8 +111,8 @@ def get_data_args():
     add_birds_file_args(parser)
     add_cub_file_args(parser)
 
-    args = parser.parse_args()
-    return args
+    # args = parser.parse_args()
+    # return args
 
 
 def add_birds_file_args(parser):
@@ -114,6 +128,14 @@ def add_birds_file_args(parser):
         input/data/birds/train/filenames.pickle : len = 8855 
         input/data/birds/test/filenames.pickle  : len = 2933
     """
+    parser.add_argument("--cnn_annotations_emb_train",
+                        type=str,
+                        default="../input/data/birds/train/char-CNN-RNN-embeddings.pickle",
+                        help="char-CNN-RNN-embeddings pickle file for train")
+    parser.add_argument("--cnn_annotations_emb_test",
+                        type=str,
+                        default="../input/data/birds/test/char-CNN-RNN-embeddings.pickle",
+                        help="char-CNN-RNN-embeddings pickle file for test")
     parser.add_argument("--train_filenames",
                         type=str,
                         default="../input/data/birds/train/filenames.pickle",
