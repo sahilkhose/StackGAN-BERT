@@ -66,7 +66,7 @@ class CAug(nn.Module):
     """Module for conditional augmentation.
     Takes input as bert embeddings of annotations and sends output to Stage 1 and 2 generators.
     """
-    def __init__ (self, bert_dim=768, n_g=128, device="cuda"): #! CHANGE THIS TO CUDA
+    def __init__ (self, bert_dim=768, n_g=128, device="cpu"): #! CHANGE THIS TO CUDA
         """
         @param bert_dim (int)           : Size of bert annotation embeddings. 
         @param n_g      (int)           : Dimension of mu, epsilon and c_0_hat
@@ -369,39 +369,46 @@ class Stage2Discriminator(nn.Module):
 
 
 if __name__ == "__main__":
-    batch_size = 2
-    n_z = 100
-    emb = torch.randn((batch_size, 768))
-    noise = torch.empty((batch_size, n_z)).normal_()
+    # batch_size = 2
+    # n_z = 100
+    # emb = torch.randn((batch_size, 768))
+    # noise = torch.empty((batch_size, n_z)).normal_()
 
-    generator1 = Stage1Generator()
-    generator2 = Stage2Generator()
+    # generator1 = Stage1Generator()
+    # generator2 = Stage2Generator()
 
-    discriminator1 = Stage1Discriminator()
-    discriminator2 = Stage2Discriminator()
+    # discriminator1 = Stage1Discriminator()
+    # discriminator2 = Stage2Discriminator()
 
 
-    _, gen1, _, _ = generator1(emb, noise) 
-    print("output1 image dimensions :", gen1.size())  # (batch_size, 3, 64, 64)
-    assert gen1.shape == (batch_size, 3, 64, 64)
-    print()
+    # _, gen1, _, _ = generator1(emb, noise) 
+    # print("output1 image dimensions :", gen1.size())  # (batch_size, 3, 64, 64)
+    # assert gen1.shape == (batch_size, 3, 64, 64)
+    # print()
 
-    disc1 = discriminator1(emb, gen1)
-    print("output1 discriminator", disc1.size())  # (batch_size)
-    # assert disc1.shape == (batch_size)
-    print()
+    # disc1 = discriminator1(emb, gen1)
+    # print("output1 discriminator", disc1.size())  # (batch_size)
+    # # assert disc1.shape == (batch_size)
+    # print()
 
-    _, gen2, _, _ = generator2(emb, noise)
-    print("output2 image dimensions :", gen2.size())  # (batch_size, 3, 256, 256)
-    assert gen2.shape == (batch_size, 3, 256, 256)
-    print()
+    # _, gen2, _, _ = generator2(emb, noise)
+    # print("output2 image dimensions :", gen2.size())  # (batch_size, 3, 256, 256)
+    # assert gen2.shape == (batch_size, 3, 256, 256)
+    # print()
 
-    disc2 = discriminator2(emb, gen2)
-    print("output2 discriminator", disc2.size())  # (batch_size)
-    # assert disc2.shape == (batch_size)
-    print()
+    # disc2 = discriminator2(emb, gen2)
+    # print("output2 discriminator", disc2.size())  # (batch_size)
+    # # assert disc2.shape == (batch_size)
+    # print()
     
-    ca = CAug(768,128,'cpu')
-    out_ca, _, _ = ca(emb)
-    print("Conditional Aug output size: ", out_ca.size())  # (batch_size, 128)
-    assert out_ca.shape == (batch_size, 128)
+    # ca = CAug(768,128,'cpu')
+    # out_ca, _, _ = ca(emb)
+    # print("Conditional Aug output size: ", out_ca.size())  # (batch_size, 128)
+    # assert out_ca.shape == (batch_size, 128)
+
+
+    ###* Checking init weights
+    # import engine
+    # netG = Stage1Generator()
+    # netG.apply(engine.weights_init)
+    pass

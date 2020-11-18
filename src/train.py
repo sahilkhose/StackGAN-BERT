@@ -15,6 +15,7 @@ import args
 import dataset
 import engine
 import layers
+import util
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -45,10 +46,10 @@ def load_stage1():
     from layers import Stage1Generator, Stage1Discriminator
     netG = Stage1Generator()
     ### TODO weights init
-    netG.apply(weights_init)
+    netG.apply(engine.weights_init)
 
     netD = Stage1Discriminator()
-    netD.apply(weights_init)
+    netD.apply(engine.weights_init)
 
     #* Load saved model:
     if args.NET_G_path != "":
@@ -77,10 +78,10 @@ def load_stage2():
     Stage1_G = Stage1Generator()
     netG = Stage2Generator(Stage1_G)
     ### TODO weights init
-    netG.apply(weights_init)
+    netG.apply(engine.weights_init)
 
     netD = Stage2Discriminator()
-    netD.apply(weights_init)
+    netD.apply(engine.weights_init)
 
     #* Load saved model:
     if args.NET_G_path != "":
@@ -160,56 +161,6 @@ def run(args, stage):
         print("losses: ", d_loss, g_loss)
         break
 
-        # loss = engine.train_fn(train_data_loader, model, optimizer, device, epoch)
-        # outputs_v, targets_v, loss_v = engine.eval_fn(valid_data_loader, model, device, epoch)
-        # outputs_t, targets_t, loss_t = engine.eval_fn(test_data_loader, model, device, epoch)
-
-    #     # Printing losses
-    #     print(f"Epoch {epoch} Training Loss: {loss}")
-    #     print(f"Epoch {epoch} Validation Loss: {loss_v}")
-    #     print(f"Epoch {epoch} Test Loss: {loss_t}\n")
-
-    #     # Evaluating extra metrics for valid and test
-    #     print("\nVALID:")
-    #     accuracy_v = metrics.accuracy_score(targets_v, torch.max(torch.tensor(outputs_v), 1)[1])
-    #     print(f"Validation Accuracy Score = {accuracy_v}")
-    #     mcc_v = metrics.matthews_corrcoef(targets_v, torch.max(torch.tensor(outputs_v), 1)[1])
-        # print(f"MCC Score = {mcc_v}")
-        # cm_v = metrics.confusion_matrix(targets_v, torch.max(torch.tensor(outputs_v), 1)[1])
-        # print(f"Confusion Matrix: \n {cm_v}")
-
-        # print("\nTEST:")
-        # accuracy_t = metrics.accuracy_score(targets_t, torch.max(torch.tensor(outputs_t), 1)[1])
-        # print(f"Test Accuracy Score = {accuracy_t}")
-        # mcc_t = metrics.matthews_corrcoef(targets_t, torch.max(torch.tensor(outputs_t), 1)[1])
-        # print(f"MCC Score = {mcc_t}")
-        # cm_t = metrics.confusion_matrix(targets_t, torch.max(torch.tensor(outputs_t), 1)[1])
-        # print(f"Confusion Matrix: \n {cm_t}")
-
-        # # Printing gold standard for first epoch
-        # if epoch == 1:
-        #     print("\nALL ONES")
-        #     all_ones_acc = metrics.accuracy_score(targets_t, list(np.ones((len(targets_t)))))
-        #     print("ACCURACY: ", all_ones_acc)
-        #     all_ones_mcc = metrics.matthews_corrcoef(targets_t, list(np.ones((len(targets_t)))))
-        #     print(f"MCC Score = {all_ones_mcc}")
-        #     all_ones_cm = metrics.confusion_matrix(targets_t, list(np.ones((len(targets_t)))))
-        #     print(f"Confusion Matrix: \n {all_ones_cm}")
-
-        # # Saving checkpoints
-        # if accuracy_t > best_accuracy:
-        #     print(f"Saving the best model! Test Accuracy: {accuracy_t}, All ones: {all_ones_acc}")
-        #     torch.save(model.state_dict(), config.MODEL_PATH + f"{config.NUM}_model_{epoch}.bin")
-        #     best_accuracy = accuracy_t
-
-        # print("__"*80)
-        # if epoch % 50 == 0:
-        #     print(f"Saving intermediate model! Test Accuracy: {accuracy_t}, All ones: {all_ones_acc}")
-        #     torch.save(model.state_dict(), config.MODEL_PATH + f"{config.NUM}_model_{epoch}.bin")
-        # if epoch == config.EPOCHS:
-        #     print(f"Saving the last model! Test Accuracy: {accuracy_t}, All ones: {all_ones_acc}")
-        #     torch.save(model.state_dict(), config.MODEL_PATH + f"{config.NUM}_model_{epoch}.bin")
-
-
+ 
 if __name__ == "__main__":
-    run(args.get_data_args(), stage=1)
+    run(args.get_all_args(), stage=1)

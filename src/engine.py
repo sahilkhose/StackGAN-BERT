@@ -3,8 +3,6 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 
-# TODO following is very basic {train, eval}_fn and random loss_fn. Figure out for GANs
-
 def KL_loss(mu, logvar):
     # -0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     KLD_element = mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
@@ -28,6 +26,18 @@ def gen_loss(disc, fake_imgs, real_labels, conditional_vector):
     cond = conditional_vector.detach()
     fake_loss = loss_fn(disc(cond, fake_imgs), real_labels)
     return fake_loss
+
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        m.weight.data.normal_(0.0, 0.02)
+    elif classname.find('BatchNorm') != -1:
+        m.weight.data.normal_(1.0, 0.02)
+        m.bias.data.fill_(0)
+    elif classname.find('Linear') != -1:
+        m.weight.data.normal_(0.0, 0.02)
+        if m.bias is not None:
+            m.bias.data.fill_(0.0)
 
 
 def train_fn(data_loader, Discriminator, Generator, optimD, optimG, device, epoch): 
