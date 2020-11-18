@@ -1,6 +1,9 @@
 # import config
 import torch
 import torch.nn as nn
+
+from torch.utils.tensorboard import summary
+from torch.utils.tensorboard import FileWriter
 from tqdm import tqdm
 
 def KL_loss(mu, logvar):
@@ -38,6 +41,56 @@ def weights_init(m):
         m.weight.data.normal_(0.0, 0.02)
         if m.bias is not None:
             m.bias.data.fill_(0.0)
+
+
+def train_new_fn(data_loader, args, netG, netD, real_labels, fake_labels, fixed_noise,  optimizerD, optimizerG, epoch, count, summary_writer):
+    for batch_id, data in tqdm(enumerate(data_loader), total=len(data_loader), desc=f"Train Epoch {epoch}/{args.TRAIN_MAX_EPOCH}"):
+        ###* Prepare training data:
+        text_emb, real_images = data
+        text_emb = text_emb.to(args.device)
+        real_images = real_images.to(args.device)
+
+        ###* Generate fake images:
+        noise.data.normal_(0, 1)
+        _, fake_images, mu, logvar = netG(text_emb, noise)
+
+        ###* Update D network:
+        netD.zero_grad()
+        errD, errD_real, errD_wrong, errD_fake = disc_loss(netD, real_images, fake_images, real_labels, fake_labels, mu)
+        errD.backward()
+        optimizerD.step()
+
+        ###* Update G network:
+        netG.zero_grad()
+        errG = gen_loss(netD, fake_images, real_labels, mu)
+        kl_loss = KL_loss(mu, logvar)
+        errG_total = errG + kl_loss * args.TRAIN_COEFF_KL
+        errG_total.backward()
+        optimizerG.step()
+
+        count += 1
+
+        if batch_id % 100 == 0:
+            summary_D = summary.scalar("D_loss", errD.data[0])
+            summary_D_r = summary.scalar("D_loss_real", errD_real.data[0])
+            summary_D_w = summary.scalar("D_loss_wrong", errD_wrong.data[0])
+            summary_D_f = summary.scalar("D_loss_fake", errD_fake.data[0])
+            summary_G = summary.scalar("G_loss", errG.data[0])
+            summary_KL = summary.scalar("KL_loss", kl_loss.data[0])
+
+            summary_writer.add_summary(summary_D, count)
+            summary_writer.add_summary(summary_D_r, count)
+            summary_writer.add_summary(summary_D_w, count)
+            summary_writer.add_summary(summary_D_f, count)
+            summary_writer.add_summary(summary_G, count)
+            summary_writer.add_summary(summary_KL, count)
+            
+            ###* save the image result for each epoch:
+            lr_fake, fake, _, _ = netG(text_emb, fixed_noise)
+            # save_img_results(real_images, fake, epoch, self.image_dir) # TODO
+            # if lr_fake is not None:
+            #     save_img_results(None, lr_fake, epoch, self.image_dir) # TODO
+
 
 
 def train_fn(data_loader, Discriminator, Generator, optimD, optimG, device, epoch): 

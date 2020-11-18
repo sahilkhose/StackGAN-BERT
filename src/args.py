@@ -35,7 +35,46 @@ def get_train_args(parser):
                         type=str,
                         default="",
                         help="Stage 1 Generator model path for Stage 2 training")
-
+    parser.add_argument("--train_bs",
+                        type=int,
+                        default=2,
+                        help="train batch size")
+    parser.add_argument("--test_bs",
+                        type=int,
+                        default=2,
+                        help="test batch size")
+    parser.add_argument("--train_workers",
+                        type=int,
+                        default=1,
+                        help="train num_workers")
+    parser.add_argument("--test_workers",
+                        type=int,
+                        default=1,
+                        help="test num_workers")
+    parser.add_argument("--TRAIN_GEN_LR",
+                        type=float,
+                        default=2e-4,
+                        help="train generator learning rate")
+    parser.add_argument("--TRAIN_DISC_LR",
+                        type=float,
+                        default=2e-4,
+                        help="test discriminator learning rate")
+    parser.add_argument("--TRAIN_LR_DECAY_EPOCH",
+                        type=int,
+                        default=600,
+                        help="train lr decay epoch")
+    parser.add_argument("--TRAIN_MAX_EPOCH",
+                        type=int,
+                        default=600,
+                        help="train maximum epochs")
+    parser.add_argument("--TRAIN_COEFF_KL",
+                        type=float,
+                        default=2.0,
+                        help="train coefficient KL")
+    parser.add_argument("--log_dir",
+                        type=str,
+                        default="",  #TODO class GANTrainer def __init__
+                        help="Log dir for tensorboard")
 
 def get_parameters(parser):
     '''Get parameters and hyper parameter values'''

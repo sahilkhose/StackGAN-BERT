@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
+import time
 import torch
 
 
@@ -28,6 +29,9 @@ from model import AmazingModel
 
 from sklearn import metrics
 from sklearn import model_selection
+from torch.utils.tensorboard import summary
+from torch.utils.tensorboard import FileWriter
+from torch.autograd import Variable
 
 print("__"*80)
 print("Imports Done...")
@@ -39,7 +43,7 @@ def check_dataset(training_set):
     print("bbox: ", b)
     plt.imshow(i)
     plt.show()
-
+    print("__"*80)
 
 def load_stage1(args):
     #* Init models and weights:
@@ -111,54 +115,77 @@ def load_stage2(args):
 
 
 def run(args, stage):
-
     if stage == 1:
         netG, netD = load_stage1(args)
     else:
         netG, netD = load_stage2(args)
 
-    training_set = dataset.CUBDataset(pickl_file=args.train_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
-    train_data_loader = torch.utils.data.DataLoader(training_set, batch_size=2, num_workers=1)
-    # check_dataset(training_set)
-    # print("__"*80)
-    testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
-    test_data_loader = torch.utils.data.DataLoader(testing_set, batch_size=2, num_workers=1)
-    # check_dataset(testing_set)
-
     # Setting up device
     device = torch.device(args.device)
 
     # Load model
-    # load_file = config.MODEL_PATH + "7_model_15.bin"
-    generator1 = layers.Stage1Generator()
-    generator2 = layers.Stage2Generator()
+    netG.to(device)
+    netD.to(device)
 
-    discriminator1 = layers.Stage1Discriminator()
-    discriminator2 = layers.Stage2Discriminator()
+    nz = args.n_z
+    batch_size = args.train_bs
+    noise = Variable(torch.FloatTensor(batch_size, nz)).to(device)
+    with torch.no_grad():
+        fixed_noise = Variable(torch.FloatTensor(batch_size, nz).normal_(0, 1)).to(device) # volatile=True
+    real_labels = Variable(torch.FloatTensor(batch_size).fill_(1)).to(device)
+    fake_labels = Variable(torch.FloatTensor(batch_size).fill_(0)).to(device)
 
-    # if os.path.exists(load_file):
-    #     model.load_state_dict(torch.load(load_file))
-    generator1.to(device)
-    generator2.to(device)
-    discriminator1.to(device)
-    discriminator2.to(device)
+    gen_lr = args.TRAIN_GEN_LR
+    disc_lr = args.TRAIN_DISC_LR
 
-    # Setting up training
-    # num_train_steps = int(len(id_train) / config.TRAIN_BATCH_SIZE * config.EPOCHS)
-    lr = 0.0002  # TODO decay this every 100 epochs by 0.5
-    optimG1 = torch.optim.Adam(generator1.parameters(), lr, betas=(0.5, 0.999))  # Beta value from github impl
-    optimD1 = torch.optim.Adam(discriminator1.parameters(), lr, betas=(0.5, 0.999))
+    lr_decay_step = args.TRAIN_LR_DECAY_EPOCH
 
-    best_accuracy = 0
+    optimizerD = torch.optim.Adam(netD.parameters(), lr=args.TRAIN_DISC_LR, betas=(0.5, 0.999))
 
-    # Main training loop
-    for epoch in range(1, 10):  # config.EPOCHS+1):
-        # Running train, valid, test loop every epoch
+    netG_para = []
+    for p in netG.parameters():
+        if p.requires_grad:
+            netG_para.append(p)
+    optimizerG = torch.optim.Adam(netG_para, lr=args.TRAIN_GEN_LR, betas=(0.5, 0.999))
+
+    count = 0
+
+    training_set = dataset.CUBDataset(pickl_file=args.train_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
+    train_data_loader = torch.utils.data.DataLoader(training_set, batch_size=args.train_bs, num_workers=args.train_workers)
+    # check_dataset(training_set)
+    
+    testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
+    test_data_loader = torch.utils.data.DataLoader(testing_set, batch_size=args.test_bs, num_workers=args.test_workers)
+    # check_dataset(testing_set)
+
+    # best_accuracy = 0
+
+    # summary_writer = FileWriter(args.log_dir) ## TODO
+
+    for epoch in range(args.TRAIN_MAX_EPOCH):
         print("__"*80)
-        d_loss, g_loss = engine.train_fn(
-            train_data_loader, discriminator1, generator1, optimD1, optimG1, device, epoch)
-        print("losses: ", d_loss, g_loss)
+        start_t = time.time()
+
+        if epoch % lr_decay_step == 0 and epoch > 0:
+            gen_lr *= 0.5
+            for param_group in optimizerG.param_groups:
+                param_group["lr"] = gen_lr
+            disc_lr *= 0.5
+            for param_group in optimizerD.param_groups:
+                param_group["lr"] = disc_lr
+        
+        # engine.train_fn()
+        # d_loss, g_loss = engine.train_fn(train_data_loader, netD, netG, optimizerD, optimizerG, device, epoch) # TODO
+        
+        end_t = time.time()
+        
+    #     print("Losses") # TODO
+    #     if epoch % self.snapshot_interval == 0: # TODO
+    #         save_model(netG, netD, epoch, self.model_dir)
         break
+    
+    # save_model(netG, netD, self.max_epoch, self.model_dir) # TODO
+    # summary_writer.close()
 
  
 if __name__ == "__main__":
