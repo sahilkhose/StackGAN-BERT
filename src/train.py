@@ -23,6 +23,7 @@ import os
 import pandas as pd
 import time
 import torch
+import torchfile
 
 
 from model import AmazingModel
@@ -197,7 +198,26 @@ def run(args, stage):
 
  
 def sample(args, stage=1):
-    ###TODO 
+    if stage == 1:
+        netG, _ = load_stage1()
+    else:
+        netG, _ = load_stage2()
+    netG.eval()
+
+    ###* Load text embeddings generated from the encoder:
+    t_file = torchfile.load(args.datapath) #TODO figure out datapath, this is a file
+    captions_list = t_file.raw_txt
+    embeddings = np.concatenate(t_file.fea_txt, axis=0)
+    num_embeddings = len(captions_list)
+    print(f"Successfully load sentences from: {args.datapath}")
+    print(f"Total number of sentences: {num_embeddings}")
+    print(f"Num embeddings: {num_embeddings, embeddings.shape}")
+    ###* Path to save generated samples:
+    save_dir = args.NET_G[:args.NET_G.find(".pth")]
+    util.make_dir(save_dir)
+
+    ### TODO
+
     pass
 
 

@@ -83,6 +83,10 @@ def get_train_args(parser):
                         type=str,
                         default="bert",
                         help="bert/cnn-rnn: embedding type")
+    parser.add_argument("--datapath",
+                        type=str,
+                        default="../output",
+                        help="datapath dir")
     parser.add_argument("--image_save_dir",
                         type=str,
                         default="../output/image/",
