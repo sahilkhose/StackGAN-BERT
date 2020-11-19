@@ -19,12 +19,32 @@ print("__"*80)
 #TODO fetch saved generated images during training and their corresponding annotations
 # annot = open(os.path.join(self.txt_dir, data_id + ".txt")).read().split("\n")[:-1]
 
+def save_img_results(real_images, fake, epoch, image_save_dir):
+    pass
+
+def save_model(netG, netD, TRAIN_MAX_EPOCH, model_dir):
+    pass
+
+
+
 def save_rgb_img():
 	None
 
 def write_log():
 	None
 
+def make_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+def check_dataset(training_set):
+    t, i, b = training_set[1]
+    print("Bert emb shape: ", t.shape)
+    print("bbox: ", b)
+    plt.imshow(i)
+    plt.show()
+    print("__"*80)
 def check_args():
     """
     To test args.py
@@ -67,3 +87,4 @@ def check_args():
 
 if __name__ == "__main__":
     check_args()
+    # make_dir("../output/model")

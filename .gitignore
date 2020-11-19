@@ -1,6 +1,7 @@
 # input data and models 
 input/data/*
-models/
+output/
+
 
 
 # data files

@@ -199,6 +199,7 @@ class Stage1Discriminator(nn.Module):
         enc = self.down_sample(img)
 
         # text emb
+        print(text_emb.shape)
         compressed = self.fc_for_text(text_emb)
         compressed = compressed.unsqueeze(2).unsqueeze(3).repeat(1, 1, self.m_d, self.m_d)
 

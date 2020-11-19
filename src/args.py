@@ -67,6 +67,10 @@ def get_train_args(parser):
                         type=int,
                         default=600,
                         help="train maximum epochs")
+    parser.add_argument("--TRAIN_SNAPSHOT_INTERVAL",
+                        type=int,
+                        default=50,
+                        help="Snapshot interval")
     parser.add_argument("--TRAIN_COEFF_KL",
                         type=float,
                         default=2.0,
@@ -79,9 +83,17 @@ def get_train_args(parser):
                         type=str,
                         default="bert",
                         help="bert/cnn-rnn: embedding type")
+    parser.add_argument("--image_save_dir",
+                        type=str,
+                        default="../output/image/",
+                        help="Image save dir")
+    parser.add_argument("--model_dir",
+                        type=str,
+                        default="../output/model/",
+                        help="Model save dir")
     parser.add_argument("--log_dir",
                         type=str,
-                        default="",  #TODO class GANTrainer def __init__
+                        default="../output/log/",
                         help="Log dir for tensorboard")
 
 def get_parameters(parser):

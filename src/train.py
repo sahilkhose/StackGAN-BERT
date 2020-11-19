@@ -37,14 +37,6 @@ print("__"*80)
 print("Imports Done...")
 
 
-def check_dataset(training_set):
-    t, i, b = training_set[1]
-    print("Bert emb shape: ", t.shape)
-    print("bbox: ", b)
-    plt.imshow(i)
-    plt.show()
-    print("__"*80)
-
 def load_stage1(args):
     #* Init models and weights:
     from layers import Stage1Generator, Stage1Discriminator
@@ -166,13 +158,16 @@ def run(args, stage):
         testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, img_dir=args.images_dir, cnn_emb=args.cnn_annotations_emb_test)
     train_data_loader = torch.utils.data.DataLoader(training_set, batch_size=args.train_bs, num_workers=args.train_workers)
     test_data_loader = torch.utils.data.DataLoader(testing_set, batch_size=args.test_bs, num_workers=args.test_workers)
-    # check_dataset(training_set)
-    # check_dataset(testing_set)
+    # util.check_dataset(training_set)
+    # util.check_dataset(testing_set)
 
 
     # best_accuracy = 0
 
-    # summary_writer = FileWriter(args.log_dir) ## TODO
+    util.make_dir(args.image_save_dir)
+    util.make_dir(args.model_dir)
+    util.make_dir(args.log_dir)
+    summary_writer = FileWriter(args.log_dir)
 
     for epoch in range(args.TRAIN_MAX_EPOCH):
         print("__"*80)
@@ -186,18 +181,19 @@ def run(args, stage):
             for param_group in optimizerD.param_groups:
                 param_group["lr"] = disc_lr
         
-        # engine.train_fn()
-        # d_loss, g_loss = engine.train_fn(train_data_loader, netD, netG, optimizerD, optimizerG, device, epoch) # TODO
+
+        engine.train_new_fn(train_data_loader, args, netG, netD, real_labels, fake_labels, 
+                            noise, fixed_noise,  optimizerD, optimizerG, epoch, count, summary_writer)
         
         end_t = time.time()
         
-    #     print("Losses") # TODO
-    #     if epoch % self.snapshot_interval == 0: # TODO
-    #         save_model(netG, netD, epoch, self.model_dir)
+        print("Losses")
+        if epoch % args.TRAIN_SNAPSHOT_INTERVAL == 0:
+            util.save_model(netG, netD, epoch, args.model_dir)
         break
     
-    # save_model(netG, netD, self.max_epoch, self.model_dir) # TODO
-    # summary_writer.close()
+    util.save_model(netG, netD, args.TRAIN_MAX_EPOCH, args.model_dir)
+    summary_writer.close()
 
  
 def sample(args, stage=1):

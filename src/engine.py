@@ -1,4 +1,6 @@
 # import config
+import util
+
 import torch
 import torch.nn as nn
 
@@ -14,9 +16,11 @@ def KL_loss(mu, logvar):
 
 def disc_loss(disc, real_imgs, fake_imgs, real_labels, fake_labels, conditional_vector):
     loss_fn = nn.BCELoss()
+    batch_size = real_imgs.shape[0]
     cond = conditional_vector.detach()
     fake_imgs = fake_imgs.detach()
 
+    print(cond.shape, real_imgs.shape, real_labels.shape)
     real_loss = loss_fn(disc(cond, real_imgs), real_labels)
     fake_loss = loss_fn(disc(cond, fake_imgs), fake_labels)
     wrong_loss = loss_fn(disc(cond[1:], real_imgs[:-1]), fake_labels[1:])
@@ -43,7 +47,7 @@ def weights_init(m):
             m.bias.data.fill_(0.0)
 
 
-def train_new_fn(data_loader, args, netG, netD, real_labels, fake_labels, fixed_noise,  optimizerD, optimizerG, epoch, count, summary_writer):
+def train_new_fn(data_loader, args, netG, netD, real_labels, fake_labels, noise, fixed_noise,  optimizerD, optimizerG, epoch, count, summary_writer):
     for batch_id, data in tqdm(enumerate(data_loader), total=len(data_loader), desc=f"Train Epoch {epoch}/{args.TRAIN_MAX_EPOCH}"):
         ###* Prepare training data:
         text_emb, real_images = data
@@ -56,13 +60,13 @@ def train_new_fn(data_loader, args, netG, netD, real_labels, fake_labels, fixed_
 
         ###* Update D network:
         netD.zero_grad()
-        errD, errD_real, errD_wrong, errD_fake = disc_loss(netD, real_images, fake_images, real_labels, fake_labels, mu)
+        errD, errD_real, errD_wrong, errD_fake = disc_loss(netD, real_images, fake_images, real_labels, fake_labels, text_emb)
         errD.backward()
         optimizerD.step()
 
         ###* Update G network:
         netG.zero_grad()
-        errG = gen_loss(netD, fake_images, real_labels, mu)
+        errG = gen_loss(netD, fake_images, real_labels, text_emb)
         kl_loss = KL_loss(mu, logvar)
         errG_total = errG + kl_loss * args.TRAIN_COEFF_KL
         errG_total.backward()
@@ -87,9 +91,9 @@ def train_new_fn(data_loader, args, netG, netD, real_labels, fake_labels, fixed_
             
             ###* save the image result for each epoch:
             lr_fake, fake, _, _ = netG(text_emb, fixed_noise)
-            # save_img_results(real_images, fake, epoch, self.image_dir) # TODO
-            # if lr_fake is not None:
-            #     save_img_results(None, lr_fake, epoch, self.image_dir) # TODO
+            util.save_img_results(real_images, fake, epoch, args.image_save_dir)
+            if lr_fake is not None:
+                util.save_img_results(None, lr_fake, epoch, args.image_save_dir)
 
 
 
