@@ -95,6 +95,10 @@ def get_train_args(parser):
                         type=str,
                         default="../output/log/",
                         help="Log dir for tensorboard")
+    parser.add_argument("--VIS_COUNT",
+                        type=int,
+                        default=64,
+                        help="")
 
 def get_parameters(parser):
     '''Get parameters and hyper parameter values'''
