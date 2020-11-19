@@ -22,12 +22,15 @@ print("__"*80)
 
 
 class CUBDataset(torch.utils.data.Dataset):
-    def __init__(self, pickl_file, emb_dir, img_dir, cnn_embeddings=None):
+    def __init__(self, pickl_file, img_dir, bert_emb=None, cnn_emb=None):
         self.file_names = pd.read_pickle(pickl_file)
-        self.emb_dir = emb_dir
         self.img_dir = img_dir
+        self.bert_emb = bert_emb
+        if cnn_emb is not None:
+            self.cnn_emb = np.array(pickle.load(open(cnn_emb, "rb"), encoding='latin1'))  # to switch to cnn-rnn embeddings
+        else:
+            self.cnn_emb = cnn_emb
         self.f_to_bbox = dict_bbox()
-        self.cnn_embeddings = cnn_embeddings  # to switch to cnn-rnn embeddings
 
     def __len__(self):
         # Total number of samples
@@ -39,10 +42,10 @@ class CUBDataset(torch.utils.data.Dataset):
 
         # Fetch text emb, image, bbox:
         idx = np.random.randint(0, 9)
-        if self.cnn_embeddings is not None:
-            text_emb = torch.tensor(self.cnn_embeddings[index][idx], dtype=torch.float)  # (1024)
+        if self.cnn_emb is not None:
+            text_emb = torch.tensor(self.cnn_emb[index][idx], dtype=torch.float)  # (1024)
         else:
-            text_emb = torch.load(os.path.join(self.emb_dir, data_id)+f"/{idx}.pt", map_location="cpu")
+            text_emb = torch.load(os.path.join(self.bert_emb, data_id)+f"/{idx}.pt", map_location="cpu")
             text_emb = text_emb.squeeze(0)  # (768)
         
         bbox = self.f_to_bbox[data_id]
@@ -99,11 +102,11 @@ if __name__ == "__main__":
 
     if bert_embed:
         ###* Bert embeddings dataset:
-        dataset_test = CUBDataset(train_filenames, data_args.bert_annotations_dir, data_args.images_dir)
+        dataset_test = CUBDataset(train_filenames, data_args.images_dir, bert_emb=data_args.bert_annotations_dir)
     else:
         ###* cnn-rnn embeddings dataset:
-        cnn_embeddings = np.array(pickle.load(open(data_args.cnn_annotations_emb_train, "rb"), encoding='latin1'))
-        dataset_test = CUBDataset(train_filenames, data_args.bert_annotations_dir, data_args.images_dir, cnn_embeddings)
+        # cnn_embeddings = np.array(pickle.load(open(data_args.cnn_annotations_emb_train, "rb"), encoding='latin1'))
+        dataset_test = CUBDataset(train_filenames, data_args.images_dir, cnn_emb=data_args.cnn_annotations_emb_train)
 
 
     t, i = dataset_test[1]

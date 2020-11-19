@@ -48,10 +48,14 @@ def check_dataset(training_set):
 def load_stage1(args):
     #* Init models and weights:
     from layers import Stage1Generator, Stage1Discriminator
-    netG = Stage1Generator()
-    netG.apply(engine.weights_init)
+    if args.embedding_type == "bert":
+        netG = Stage1Generator(emb_dim=768)
+        netD = Stage1Discriminator(emb_dim=768)
+    else:
+        netG = Stage1Generator(emb_dim=1024)
+        netD = Stage1Discriminator(emb_dim=1024)
 
-    netD = Stage1Discriminator()
+    netG.apply(engine.weights_init)
     netD.apply(engine.weights_init)
 
     #* Load saved model:
@@ -79,11 +83,15 @@ def load_stage1(args):
 def load_stage2(args):
     #* Init models and weights:
     from layers import Stage2Generator, Stage2Discriminator, Stage1Generator
-    Stage1_G = Stage1Generator()
-    netG = Stage2Generator(Stage1_G)
+    if args.embedding_type == "bert":
+        Stage1_G = Stage1Generator(emb_dim=768)
+        netG = Stage2Generator(Stage1_G, emb_dim=768)
+        netD = Stage2Discriminator(emb_dim=768)
+    else:
+        Stage1_G = Stage1Generator(emb_dim=1024)
+        netG = Stage2Generator(Stage1_G, emb_dim=1024)
+        netD = Stage2Discriminator(emb_dim=1024)
     netG.apply(engine.weights_init)
-
-    netD = Stage2Discriminator()
     netD.apply(engine.weights_init)
 
     #* Load saved model:
@@ -150,13 +158,17 @@ def run(args, stage):
 
     count = 0
 
-    training_set = dataset.CUBDataset(pickl_file=args.train_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
+    if args.embedding_type == "bert":
+        training_set = dataset.CUBDataset(pickl_file=args.train_filenames, img_dir=args.images_dir, bert_emb=args.bert_annotations_dir)
+        testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, img_dir=args.images_dir, bert_emb=args.bert_annotations_dir)
+    else:
+        training_set = dataset.CUBDataset(pickl_file=args.train_filenames, img_dir=args.images_dir, cnn_emb=args.cnn_annotations_emb_train)
+        testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, img_dir=args.images_dir, cnn_emb=args.cnn_annotations_emb_test)
     train_data_loader = torch.utils.data.DataLoader(training_set, batch_size=args.train_bs, num_workers=args.train_workers)
-    # check_dataset(training_set)
-    
-    testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, emb_dir=args.bert_annotations_dir, img_dir=args.images_dir)
     test_data_loader = torch.utils.data.DataLoader(testing_set, batch_size=args.test_bs, num_workers=args.test_workers)
+    # check_dataset(training_set)
     # check_dataset(testing_set)
+
 
     # best_accuracy = 0
 
@@ -188,5 +200,10 @@ def run(args, stage):
     # summary_writer.close()
 
  
+def sample(args, stage=1):
+    ###TODO 
+    pass
+
+
 if __name__ == "__main__":
     run(args.get_all_args(), stage=1)

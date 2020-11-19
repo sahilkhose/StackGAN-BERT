@@ -18,8 +18,7 @@ def conv3x3(in_channels, out_channels):
 
 def _residual(in_channels):
     return nn.Sequential(
-        nn.Conv2d(in_channels, in_channels, kernel_size=3,
-                  stride=1, padding=1, bias=False),
+        nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1, bias=False),
         nn.BatchNorm2d(out_channels),
         nn.ReLU(inplace=True)
     )
@@ -47,8 +46,7 @@ class ResBlock(nn.Module):
 
 def _downsample(in_channels, out_channels):
     return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, kernel_size=4,
-                  stride=2, padding=1, bias=False),
+        nn.Conv2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1, bias=False),
         nn.BatchNorm2d(out_channels),
         nn.LeakyReLU(0.2, inplace=True)
     )
@@ -56,8 +54,7 @@ def _downsample(in_channels, out_channels):
 def _upsample(in_channels, out_channels):
     return nn.Sequential(
         nn.Upsample(scale_factor=2, mode='nearest'),
-        nn.Conv2d(in_channels, out_channels, kernel_size=3,
-                  stride=1, padding=1, bias=False),
+        nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False),
         nn.BatchNorm2d(out_channels),
         nn.ReLU(inplace=True)
     )
@@ -66,22 +63,22 @@ class CAug(nn.Module):
     """Module for conditional augmentation.
     Takes input as bert embeddings of annotations and sends output to Stage 1 and 2 generators.
     """
-    def __init__ (self, bert_dim=768, n_g=128, device="cpu"): #! CHANGE THIS TO CUDA
+    def __init__ (self, emb_dim=768, n_g=128, device="cpu"): #! CHANGE THIS TO CUDA
         """
-        @param bert_dim (int)           : Size of bert annotation embeddings. 
+        @param emb_dim (int)            : Size of annotation embeddings. 
         @param n_g      (int)           : Dimension of mu, epsilon and c_0_hat
         @param device   (torch.device)  : cuda/cpu
         """
         super(CAug, self).__init__()
-        self.bert_dim = bert_dim
+        self.emb_dim = emb_dim
         self.n_g = n_g
-        self.fc = nn.Linear(self.bert_dim, self.n_g*2, bias=True)  # To split in mu and sigma
+        self.fc = nn.Linear(self.emb_dim, self.n_g*2, bias=True)  # To split in mu and sigma
         self.relu = nn.ReLU()
         self.device = device
 
     def forward(self, text_emb):
         """
-        @param   text_emb (torch.tensor): Text embedding.                 (batch, bert_dim)
+        @param   text_emb (torch.tensor): Text embedding.                 (batch, emb_dim)
         @returns c_0_hat  (torch.tensor): Gaussian conditioning variable. (batch, n_g)
         """
         enc = self.relu(self.fc(text_emb)).squeeze(1)  # (batch, n_g*2)
@@ -104,7 +101,7 @@ class Stage1Generator(nn.Module):
     Stage 1 generator.
     Takes in input from Conditional Augmentation and outputs 64x64 image to Stage1Discrimantor.
     """
-    def __init__(self, n_g=128, n_z=100):
+    def __init__(self, n_g=128, n_z=100, emb_dim=768):
         """
         @param n_g (int) : Dimension of c_0_hat.
         @param n_z (int) : Dimension of noise vector.
@@ -112,10 +109,11 @@ class Stage1Generator(nn.Module):
         super(Stage1Generator, self).__init__()
         self.n_g = n_g
         self.n_z = n_z
+        self.emb_dim = emb_dim
         self.inp_ch = self.n_g*8  
 
         # (batch, bert_size) -> (batch, n_g)
-        self.caug = CAug()
+        self.caug = CAug(emb_dim=self.emb_dim)
 
         # (batch, n_g + n_z) -> (batch, inp_ch * 4 * 4)
         self.fc = nn.Sequential(
@@ -167,13 +165,13 @@ class Stage1Discriminator(nn.Module):
     """
     Stage 1 discriminator
     """
-    def __init__(self, n_d=128, m_d=4, bert_dim=768, img_dim=64):
+    def __init__(self, n_d=128, m_d=4, emb_dim=768, img_dim=64):
         super(Stage1Discriminator, self).__init__()
         self.n_d = n_d
         self.m_d = m_d
-        self.bert_dim = bert_dim
+        self.emb_dim = emb_dim
 
-        self.fc_for_text = nn.Linear(self.bert_dim, self.n_d)
+        self.fc_for_text = nn.Linear(self.emb_dim, self.n_d)
         self.down_sample = nn.Sequential(
             # (batch, 3, 64, 64) -> (batch, img_dim, 32, 32)
             nn.Conv2d(3, img_dim, kernel_size=4, stride=2, padding=1, bias=False), # (batch, 64, 32, 32)
@@ -216,7 +214,7 @@ class Stage2Generator(nn.Module):
     Stage 2 generator.
     Takes in input from Conditional Augmentation and outputs 256x256 image to Stage2Discrimantor.
     """
-    def __init__(self, n_g=128, n_z=100, ef_size=128, n_res=4):
+    def __init__(self, stage1_gen, n_g=128, n_z=100, ef_size=128, n_res=4, emb_dim=768):
         """
         @param n_g (int) : Dimension of c_0_hat.
         """
@@ -225,14 +223,15 @@ class Stage2Generator(nn.Module):
         self.n_z = n_z
         self.ef_size = ef_size
         self.n_res = n_res
+        self.emb_dim = emb_dim
 
-        self.stage1_gen = Stage1Generator()
+        self.stage1_gen = stage1_gen
         # Freezing the stage 1 generator:
         for param in self.stage1_gen.parameters():
             param.requires_grad = False
 
         # (batch, bert_size) -> (batch, n_g)
-        self.caug = CAug()
+        self.caug = CAug(emb_dim=self.emb_dim)
 
         # -> (batch, n_g*4, 16, 16)
         self.encoder = nn.Sequential(
@@ -311,13 +310,13 @@ class Stage2Discriminator(nn.Module):
     Stage 2 discriminator
     """
 
-    def __init__(self, n_d=128, m_d=4, bert_dim=768, img_dim=256):
+    def __init__(self, n_d=128, m_d=4, emb_dim=768, img_dim=256):
         super(Stage2Discriminator, self).__init__()
         self.n_d = n_d
         self.m_d = m_d
-        self.bert_dim = bert_dim
+        self.emb_dim = emb_dim
 
-        self.fc_for_text = nn.Linear(self.bert_dim, self.n_d)
+        self.fc_for_text = nn.Linear(self.emb_dim, self.n_d)
         self.down_sample = nn.Sequential(
             # (batch, 3, 64, 64) -> (batch, img_dim//4, 128, 128)
             nn.Conv2d(3, img_dim//4, kernel_size=4, stride=2, padding=1, bias=False),  # (batch, 64, 128, 128)
@@ -369,42 +368,43 @@ class Stage2Discriminator(nn.Module):
 
 
 if __name__ == "__main__":
-    # batch_size = 2
-    # n_z = 100
-    # emb = torch.randn((batch_size, 768))
-    # noise = torch.empty((batch_size, n_z)).normal_()
+    batch_size = 2
+    n_z = 100
+    emb_dim = 1024 # 768
+    emb = torch.randn((batch_size, emb_dim))
+    noise = torch.empty((batch_size, n_z)).normal_()
 
-    # generator1 = Stage1Generator()
-    # generator2 = Stage2Generator()
+    generator1 = Stage1Generator(emb_dim=emb_dim)
+    generator2 = Stage2Generator(generator1, emb_dim=emb_dim)
 
-    # discriminator1 = Stage1Discriminator()
-    # discriminator2 = Stage2Discriminator()
+    discriminator1 = Stage1Discriminator(emb_dim=emb_dim)
+    discriminator2 = Stage2Discriminator(emb_dim=emb_dim)
 
 
-    # _, gen1, _, _ = generator1(emb, noise) 
-    # print("output1 image dimensions :", gen1.size())  # (batch_size, 3, 64, 64)
-    # assert gen1.shape == (batch_size, 3, 64, 64)
-    # print()
+    _, gen1, _, _ = generator1(emb, noise) 
+    print("output1 image dimensions :", gen1.size())  # (batch_size, 3, 64, 64)
+    assert gen1.shape == (batch_size, 3, 64, 64)
+    print()
 
-    # disc1 = discriminator1(emb, gen1)
-    # print("output1 discriminator", disc1.size())  # (batch_size)
-    # # assert disc1.shape == (batch_size)
-    # print()
+    disc1 = discriminator1(emb, gen1)
+    print("output1 discriminator", disc1.size())  # (batch_size)
+    # assert disc1.shape == (batch_size)
+    print()
 
-    # _, gen2, _, _ = generator2(emb, noise)
-    # print("output2 image dimensions :", gen2.size())  # (batch_size, 3, 256, 256)
-    # assert gen2.shape == (batch_size, 3, 256, 256)
-    # print()
+    _, gen2, _, _ = generator2(emb, noise)
+    print("output2 image dimensions :", gen2.size())  # (batch_size, 3, 256, 256)
+    assert gen2.shape == (batch_size, 3, 256, 256)
+    print()
 
-    # disc2 = discriminator2(emb, gen2)
-    # print("output2 discriminator", disc2.size())  # (batch_size)
-    # # assert disc2.shape == (batch_size)
-    # print()
+    disc2 = discriminator2(emb, gen2)
+    print("output2 discriminator", disc2.size())  # (batch_size)
+    # assert disc2.shape == (batch_size)
+    print()
     
-    # ca = CAug(768,128,'cpu')
-    # out_ca, _, _ = ca(emb)
-    # print("Conditional Aug output size: ", out_ca.size())  # (batch_size, 128)
-    # assert out_ca.shape == (batch_size, 128)
+    ca = CAug(emb_dim=emb_dim, n_g=128, device='cpu')
+    out_ca, _, _ = ca(emb)
+    print("Conditional Aug output size: ", out_ca.size())  # (batch_size, 128)
+    assert out_ca.shape == (batch_size, 128)
 
 
     ###* Checking init weights

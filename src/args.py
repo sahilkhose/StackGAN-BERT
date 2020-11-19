@@ -71,6 +71,14 @@ def get_train_args(parser):
                         type=float,
                         default=2.0,
                         help="train coefficient KL")
+    parser.add_argument("--dataset_name",
+                        type=str,
+                        default="birds",
+                        help="birds/flowers: dataset name")
+    parser.add_argument("--embedding_type",
+                        type=str,
+                        default="bert",
+                        help="bert/cnn-rnn: embedding type")
     parser.add_argument("--log_dir",
                         type=str,
                         default="",  #TODO class GANTrainer def __init__
