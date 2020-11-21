@@ -47,3 +47,10 @@ ganctober
 cd input/src
 python3 bert_emb.py  
 ```
+
+### Training
+```bash
+cd src
+python3 train.py # To start training
+tensorboard --logdir=../output # To open tensorboard
+```

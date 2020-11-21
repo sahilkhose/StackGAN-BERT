@@ -46,6 +46,7 @@ def weights_init(m):
 
 
 def train_new_fn(data_loader, args, netG, netD, real_labels, fake_labels, noise, fixed_noise,  optimizerD, optimizerG, epoch, count, summary_writer):
+    errD_, errD_real_, errD_wrong_, errD_fake_, errG_, kl_loss_ = 0, 0, 0, 0, 0, 0
     for batch_id, data in tqdm(enumerate(data_loader), total=len(data_loader), desc=f"Train Epoch {epoch}/{args.TRAIN_MAX_EPOCH}"):
         ###* Prepare training data:
         text_emb, real_images = data
@@ -93,54 +94,23 @@ def train_new_fn(data_loader, args, netG, netD, real_labels, fake_labels, noise,
             if lr_fake is not None:
                 util.save_img_results(None, lr_fake, epoch, args)
 
+            errD_ += errD
+            errD_real_ += errD_real 
+            errD_wrong_ += errD_wrong
+            errD_fake_ += errD_fake
+            errG_ += errG
+            kl_loss_ += kl_loss
+    
+    errD_ /= len(data_loader)
+    errD_real_ /= len(data_loader)
+    errD_wrong_ /= len(data_loader)
+    errD_fake_ /= len(data_loader)
+    errG_ /= len(data_loader)
+    kl_loss_ /= len(data_loader)
+
+    return errD_, errD_real_, errD_wrong_, errD_fake_, errG_, kl_loss_
 
 
-def train_fn(data_loader, Discriminator, Generator, optimD, optimG, device, epoch): 
-    Discriminator.train()
-    Generator.train()
-    #LOSS = 0.
-    DISC_LOSS = 0.
-    GEN_LOSS = 0.
-
-    for batch_id, data in tqdm(enumerate(data_loader), total=len(data_loader)): #, desc=f"Train Epoch {epoch}/{config.EPOCHS}"):
-        text_embs, images = data
-        images = torch.tensor(images)
-
-        # Loading it to device
-        text_embs = text_embs.to(device, dtype=torch.float)
-        images = images.to(device, dtype=torch.float)
-
-        # print(text_embs.size())
-        # ROUGH TRAIN
-        batch_size = text_embs.shape[0]
-        # print("batch_size:", batch_size)
-        n_z = 100
-        noise = torch.empty((batch_size, n_z)).normal_()
-        _, fake, mu, logvar = Generator(text_embs, noise.to(device, dtype=torch.float))
-
-        real_labels = torch.ones(batch_size)
-        fake_labels = torch.zeros(batch_size)
-
-        # TODO create real_labels, fake_labels, d1 takes as input text_emb as input, how do we pass mu :/
-        Discriminator.zero_grad()
-        loss_disc = disc_loss(Discriminator, images, fake, real_labels, fake_labels, text_embs) # XXX
-        DISC_LOSS += loss_disc.detach()
-        loss_disc.backward()
-        optimD.step()
-
-        Generator.zero_grad()
-        loss_gen = gen_loss(Discriminator, fake, real_labels, text_embs)
-        kl = KL_loss(mu, logvar)
-        generator_loss = loss_gen + 1*kl # TODO add this arg, this the lambda in the paper
-        GEN_LOSS += generator_loss.detach()
-        generator_loss.backward()
-        optimG.step()
-
-        break
-
-    DISC_LOSS /= len(data_loader) # XXX why
-    GEN_LOSS /= len(data_loader)
-    return DISC_LOSS, GEN_LOSS # XXX why
 
 
 def eval_fn(data_loader, model, device, epoch):

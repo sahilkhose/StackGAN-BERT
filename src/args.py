@@ -65,7 +65,7 @@ def get_train_args(parser):
                         help="train lr decay epoch")
     parser.add_argument("--TRAIN_MAX_EPOCH",
                         type=int,
-                        default=600,
+                        default=60, # 600
                         help="train maximum epochs")
     parser.add_argument("--TRAIN_SNAPSHOT_INTERVAL",
                         type=int,

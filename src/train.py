@@ -181,17 +181,17 @@ def run(args, stage):
             for param_group in optimizerD.param_groups:
                 param_group["lr"] = disc_lr
         
-        engine.train_new_fn(train_data_loader, args, netG, netD, real_labels, fake_labels, 
-                            noise, fixed_noise,  optimizerD, optimizerG, epoch, count, summary_writer)
+        errD, errD_real, errD_wrong, errD_fake, errG, kl_loss = engine.train_new_fn(
+            train_data_loader, args, netG, netD, real_labels, fake_labels, 
+            noise, fixed_noise,  optimizerD, optimizerG, epoch, count, summary_writer)
         
         end_t = time.time()
         
-        print("Losses")
+        print(f"[{epoch}/{args.TRAIN_MAX_EPOCH}] Loss_D: {errD:.4f}, Loss_G: {errG:.4f}, Loss_KL: {kl_loss:.4f}, Loss_real: {errD_real:.4f}, Loss_wrong: {errD_wrong:.4f}, Loss_fake: {errD_fake:.4f}, Total Time: {end_t-start_t :.2f} sec")
         if epoch % args.TRAIN_SNAPSHOT_INTERVAL == 0:
-            util.save_model(netG, netD, epoch, args.model_dir)
-        break
+            util.save_model(netG, netD, epoch, args)
     
-    util.save_model(netG, netD, args.TRAIN_MAX_EPOCH, args.model_dir)
+    util.save_model(netG, netD, args.TRAIN_MAX_EPOCH, args)
     summary_writer.close()
 
  
