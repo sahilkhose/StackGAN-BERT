@@ -77,9 +77,7 @@ def check_args():
     print("\nAnnotations of the bird image: \n")
     [print(f"{idx}: {ele}") for idx, ele in enumerate(open(text_path).read().split("\n")[:-1])]
 
-    print("\nShape of bert embeddin
-# print("__"*80)
-# print("Imports Done... \n")g of annotation no 0:")
+    print("\nShape of bert embedding of annotation no 0:")
     emb = torch.load(bert_path)
     print(emb.shape)  # (1, 768)
 

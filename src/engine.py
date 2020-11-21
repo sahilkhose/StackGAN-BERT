@@ -20,13 +20,11 @@ def disc_loss(disc, real_imgs, fake_imgs, real_labels, fake_labels, conditional_
     cond = conditional_vector.detach()
     fake_imgs = fake_imgs.detach()
 
-    print(cond.shape, real_imgs.shape, real_labels.shape)
     real_loss = loss_fn(disc(cond, real_imgs), real_labels)
     fake_loss = loss_fn(disc(cond, fake_imgs), fake_labels)
     wrong_loss = loss_fn(disc(cond[1:], real_imgs[:-1]), fake_labels[1:])
-
     loss = real_loss + (fake_loss+wrong_loss)*0.5
-    return loss
+    return loss, real_loss, wrong_loss, fake_loss
 
 def gen_loss(disc, fake_imgs, real_labels, conditional_vector):
     loss_fn = nn.BCELoss()
@@ -75,12 +73,12 @@ def train_new_fn(data_loader, args, netG, netD, real_labels, fake_labels, noise,
         count += 1
 
         if batch_id % 100 == 0:
-            summary_D = summary.scalar("D_loss", errD.data[0])
-            summary_D_r = summary.scalar("D_loss_real", errD_real.data[0])
-            summary_D_w = summary.scalar("D_loss_wrong", errD_wrong.data[0])
-            summary_D_f = summary.scalar("D_loss_fake", errD_fake.data[0])
-            summary_G = summary.scalar("G_loss", errG.data[0])
-            summary_KL = summary.scalar("KL_loss", kl_loss.data[0])
+            summary_D = summary.scalar("D_loss", errD.data)
+            summary_D_r = summary.scalar("D_loss_real", errD_real.data)
+            summary_D_w = summary.scalar("D_loss_wrong", errD_wrong.data)
+            summary_D_f = summary.scalar("D_loss_fake", errD_fake.data)
+            summary_G = summary.scalar("G_loss", errG.data)
+            summary_KL = summary.scalar("KL_loss", kl_loss.data)
 
             summary_writer.add_summary(summary_D, count)
             summary_writer.add_summary(summary_D_r, count)
@@ -91,9 +89,9 @@ def train_new_fn(data_loader, args, netG, netD, real_labels, fake_labels, noise,
             
             ###* save the image result for each epoch:
             lr_fake, fake, _, _ = netG(text_emb, fixed_noise)
-            util.save_img_results(real_images, fake, epoch, args.image_save_dir)
+            util.save_img_results(real_images, fake, epoch, args)
             if lr_fake is not None:
-                util.save_img_results(None, lr_fake, epoch, args.image_save_dir)
+                util.save_img_results(None, lr_fake, epoch, args)
 
 
 

@@ -16,13 +16,6 @@ def conv3x3(in_channels, out_channels):
     """3x3 conv with same padding"""
     return nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
 
-def _residual(in_channels):
-    return nn.Sequential(
-        nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1, bias=False),
-        nn.BatchNorm2d(out_channels),
-        nn.ReLU(inplace=True)
-    )
-
 
 class ResBlock(nn.Module):
     def __init__(self, channel_num):
@@ -199,7 +192,6 @@ class Stage1Discriminator(nn.Module):
         enc = self.down_sample(img)
 
         # text emb
-        print(text_emb.shape)
         compressed = self.fc_for_text(text_emb)
         compressed = compressed.unsqueeze(2).unsqueeze(3).repeat(1, 1, self.m_d, self.m_d)
 
