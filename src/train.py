@@ -156,7 +156,6 @@ def run(args, stage):
         training_set = dataset.CUBDataset(pickl_file=args.train_filenames, img_dir=args.images_dir, cnn_emb=args.cnn_annotations_emb_train)
         testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, img_dir=args.images_dir, cnn_emb=args.cnn_annotations_emb_test)
     train_data_loader = torch.utils.data.DataLoader(training_set, batch_size=args.train_bs, num_workers=args.train_workers)
-    # https://github.com/pytorch/pytorch/issues/1512 : last batch size = 1 instead of 2
     test_data_loader = torch.utils.data.DataLoader(testing_set, batch_size=args.test_bs, num_workers=args.test_workers)
     # util.check_dataset(training_set)
     # util.check_dataset(testing_set)
