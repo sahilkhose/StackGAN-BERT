@@ -28,6 +28,7 @@ import torch
 import torchfile
 
 
+from PIL import Image
 from sklearn import metrics
 from sklearn import model_selection
 from torch.utils.tensorboard import summary
@@ -204,7 +205,7 @@ def sample(args, datapath):
     netG.eval()
 
     ###* Load text embeddings generated from the encoder:
-    t_file = torchfile.load(datapath) #TODO figure out datapath, this is a file
+    t_file = torchfile.load(datapath)
     captions_list = t_file.raw_txt
     embeddings = np.concatenate(t_file.fea_txt, axis=0)
     num_embeddings = len(captions_list)
@@ -235,7 +236,7 @@ def sample(args, datapath):
 
         ###* Generate fake images:
         noise.data.normal_(0, 1)
-        _, fake_imgs, mu, logvar = netG(txt_embedding, noise)
+        _, fake_imgs, mu, logvar = netG(text_embedding, noise)
         for i in range(batch_size):
             save_name = f"{save_dir}/{count+i}.png"  
             im = fake_imgs[i].data.cpu().numpy()
