@@ -4,24 +4,59 @@ Authors:
     Abhiraj Tiwari (abhirajtiwari@gmail.com)
     Sahil Khose (sahilkhose18@gmail.com)
 """
+# >  python3 args.py --conf ../cfg/s1.yml
 import argparse
+import yaml
+from json import dumps
 
+########################################### MAIN FUNCTIONS ###########################################
 
 def get_all_args():
-    """Get all parameters"""
+    return parse_args(get_parser())
 
-    parser = argparse.ArgumentParser("Arguments")
 
-    get_train_args(parser)
-    get_parameters(parser)
-    get_model_params(parser)
-    get_data_args(parser)
+def print_args(args):
+    print("__"*80)
+    print(f'Args: {dumps(vars(args), indent=4, sort_keys=True)}')
+    print("__"*80)
 
+
+def parse_args(parser):
     args = parser.parse_args()
+    if args.config_file:
+        data = yaml.load(args.config_file, Loader=yaml.FullLoader)
+        delattr(args, "config_file")
+        arg_dict = args.__dict__
+        for key, value in data.items():
+            if isinstance(value, list):
+                for v in value:
+                    arg_dict[key].append(v)
+            else:
+                arg_dict[key] = value
     return args
 
 
-def get_train_args(parser):
+def get_parser():
+    """Get all parameters"""
+    parser = argparse.ArgumentParser("Arguments")
+
+    add_conf_args(parser)
+    add_train_args(parser)
+    add_model_args(parser)
+    add_data_args(parser)
+
+    return parser
+
+
+########################################### PARSER ARGUMENTS ###########################################
+def add_conf_args(parser):
+    parser.add_argument("--config-file",
+                        type=argparse.FileType(mode="r"),
+                        dest="config_file",
+                        help="config yaml file to pass params")
+
+
+def add_train_args(parser):
     """ train.py """
     parser.add_argument("--NET_G_path",
                         type=str,
@@ -107,26 +142,17 @@ def get_train_args(parser):
                         type=int,
                         default=1,
                         help="Stage to train/eval (1/2)")
-
-def get_parameters(parser):
-    '''Get parameters and hyper parameter values'''
-
-    # parser = argparse.ArgumentParser("Parameter args")
     parser.add_argument("--device",
                         type=str,
                         default="cpu", #! CHANGE THIS TO CUDA BEFORE TRAINING
                         help="Device type: cuda/cpu")
 
-    # args = parser.parse_args()
-    # return args
 
-
-def get_model_params(parser):
+def add_model_args(parser):
     """
     Refer to StackGAN paper: https://arxiv.org/pdf/1612.03242.pdf 
     for parameter names.
     """
-    # parser = argparse.ArgumentParser("Model parameters")
     parser.add_argument("--n_g",
                         type=int,
                         default=128,
@@ -164,13 +190,9 @@ def get_model_params(parser):
                         default=256,
                         help="")
 
-    # args = parser.parse_args()
-    # return args
 
-def get_data_args(parser):
+def add_data_args(parser):
     '''Get all data paths'''
-
-    # parser = argparse.ArgumentParser("Data path args")
     ###* Directories:
     parser.add_argument("--annotations_dir",
                         type=str,
@@ -192,9 +214,6 @@ def get_data_args(parser):
     ###* Files: 
     add_birds_file_args(parser)
     add_cub_file_args(parser)
-
-    # args = parser.parse_args()
-    # return args
 
 
 def add_birds_file_args(parser):
@@ -250,15 +269,17 @@ def add_cub_file_args(parser):
                         type=str,
                         default="../input/data/CUB_200_2011/images.txt",
                         help="Text file path: mapping image id to image path")  # <image_id> <image_name>
-
-    #TODO re-run the bert embeddings code. Save the torch tensors using their ids.
-
     parser.add_argument("--train_test_split_file",
                         type=str,
                         default="../input/data/CUB_200_2011/train_test_split.txt",
                         help="Text file path: mapping image id to train/test split")  # <image_id> <is_training_image>
-    
     parser.add_argument("--bounding_boxes",
                         type=str,
                         default="../input/data/CUB_200_2011/bounding_boxes.txt",
                         help="Text file path: mapping image id to train/test split")  # <image_id> <x> <y> <width> <height>
+
+
+if __name__ == "__main__":
+    args = get_all_args()
+    print_args(args)
+    print("args:", args.train_bs)

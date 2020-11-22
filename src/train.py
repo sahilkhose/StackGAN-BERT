@@ -1,5 +1,7 @@
 """Test a model and generate submission CSV.
 
+> python3 train.py --conf ../cfg/s1.yml 
+
 Usage:
     > python train.py --load_path PATH --name NAME
     where
@@ -247,7 +249,8 @@ def sample(args, datapath):
         count += batch_size
     
 if __name__ == "__main__":
-    args = args.get_all_args()
-    # run(args)
-    datapath = os.path.join(args.datapath, "test/val_captions.t7")
-    sample(args, datapath)
+    args_ = args.get_all_args()
+    args.print_args(args_)
+    run(args_)
+    # datapath = os.path.join(args_.datapath, "test/val_captions.t7")
+    # sample(args_, datapath)
