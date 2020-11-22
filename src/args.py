@@ -103,6 +103,10 @@ def get_train_args(parser):
                         type=int,
                         default=64,
                         help="")
+    parser.add_argument("--STAGE",
+                        type=int,
+                        default=1,
+                        help="Stage to train/eval (1/2)")
 
 def get_parameters(parser):
     '''Get parameters and hyper parameter values'''

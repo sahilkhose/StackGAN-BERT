@@ -113,8 +113,8 @@ def load_stage2(args):
     return netG, netD
 
 
-def run(args, stage):
-    if stage == 1:
+def run(args):
+    if args.STAGE == 1:
         netG, netD = load_stage1(args)
     else:
         netG, netD = load_stage2(args)
@@ -194,29 +194,60 @@ def run(args, stage):
     summary_writer.close()
 
  
-def sample(args, stage=1):
-    if stage == 1:
-        netG, _ = load_stage1()
+def sample(args, datapath):
+    if args.STAGE == 1:
+        netG, _ = load_stage1(args)
     else:
-        netG, _ = load_stage2()
+        netG, _ = load_stage2(args)
     netG.eval()
 
     ###* Load text embeddings generated from the encoder:
-    t_file = torchfile.load(args.datapath) #TODO figure out datapath, this is a file
+    t_file = torchfile.load(datapath) #TODO figure out datapath, this is a file
     captions_list = t_file.raw_txt
     embeddings = np.concatenate(t_file.fea_txt, axis=0)
     num_embeddings = len(captions_list)
     print(f"Successfully load sentences from: {args.datapath}")
     print(f"Total number of sentences: {num_embeddings}")
-    print(f"Num embeddings: {num_embeddings, embeddings.shape}")
+    print(f"Num embeddings: {num_embeddings} {embeddings.shape}")
+
     ###* Path to save generated samples:
     save_dir = args.NET_G[:args.NET_G.find(".pth")]
     util.make_dir(save_dir)
 
-    ### TODO
+    batch_size = np.minimum(num_embeddings, args.train_bs)
+    nz = args.n_z
+    noise = Variable(torch.FloatTensor(batch_size, nz))
+    noise = noise.to(args.device)
+    count = 0
+    while count < num_embeddings:
+        if count > 3000:
+            break
+        iend = count + batch_size
+        if iend > num_embeddings:
+            iend = num_embeddings
+            count = num_embeddings - batch_size
+        embeddings_batch = embeddings[count:iend]
+        # captions_batch = captions_list[count:iend]
+        text_embedding = Variable(torch.FloatTensor(embeddings_batch))
+        text_embedding = text_embedding.to(args.device)
 
-    pass
-
-
+        ###* Generate fake images:
+        noise.data.normal_(0, 1)
+        _, fake_imgs, mu, logvar = netG(txt_embedding, noise)
+        for i in range(batch_size):
+            save_name = f"{save_dir}/{count+i}.png"  
+            im = fake_imgs[i].data.cpu().numpy()
+            im = (im + 1.0) * 127.5
+            im = im.astype(np.uint8)
+            # print("im", im.shape)
+            im = np.transpose(im, (1, 2, 0))
+            # print("im", im.shape)
+            im = Image.fromarray(im)
+            im.save(save_name)
+        count += batch_size
+    
 if __name__ == "__main__":
-    run(args.get_all_args(), stage=1)
+    args = args.get_all_args()
+    # run(args)
+    datapath = os.path.join(args.datapath, "test/val_captions.t7")
+    sample(args, datapath)
