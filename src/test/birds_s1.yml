@@ -1,0 +1,4 @@
+CONFIG_NAME: "stage1"
+train:
+  train_bs: 2
+  epochs: 5
