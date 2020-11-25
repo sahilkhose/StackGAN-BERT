@@ -56,7 +56,7 @@ class CAug(nn.Module):
     """Module for conditional augmentation.
     Takes input as bert embeddings of annotations and sends output to Stage 1 and 2 generators.
     """
-    def __init__ (self, emb_dim=768, n_g=128, device="cpu"): #! CHANGE THIS TO CUDA
+    def __init__ (self, emb_dim=768, n_g=128, device="cuda"): #! CHANGE THIS TO CUDA
         """
         @param emb_dim (int)            : Size of annotation embeddings. 
         @param n_g      (int)           : Dimension of mu, epsilon and c_0_hat

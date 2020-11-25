@@ -100,7 +100,7 @@ def add_train_args(parser):
                         help="train lr decay epoch")
     parser.add_argument("--TRAIN_MAX_EPOCH",
                         type=int,
-                        default=60, # 600
+                        default=600,
                         help="train maximum epochs")
     parser.add_argument("--TRAIN_SNAPSHOT_INTERVAL",
                         type=int,
@@ -144,7 +144,7 @@ def add_train_args(parser):
                         help="Stage to train/eval (1/2)")
     parser.add_argument("--device",
                         type=str,
-                        default="cpu", #! CHANGE THIS TO CUDA BEFORE TRAINING
+                        default="cuda", #! CHANGE THIS TO CUDA BEFORE TRAINING
                         help="Device type: cuda/cpu")
 
 
