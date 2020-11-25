@@ -72,11 +72,11 @@ def add_train_args(parser):
                         help="Stage 1 Generator model path for Stage 2 training")
     parser.add_argument("--train_bs",
                         type=int,
-                        default=2,
+                        default=128,
                         help="train batch size")
     parser.add_argument("--test_bs",
                         type=int,
-                        default=2,
+                        default=4,
                         help="test batch size")
     parser.add_argument("--train_workers",
                         type=int,
@@ -96,15 +96,15 @@ def add_train_args(parser):
                         help="test discriminator learning rate")
     parser.add_argument("--TRAIN_LR_DECAY_EPOCH",
                         type=int,
-                        default=600,
+                        default=20,
                         help="train lr decay epoch")
     parser.add_argument("--TRAIN_MAX_EPOCH",
                         type=int,
-                        default=600,
+                        default=120,
                         help="train maximum epochs")
     parser.add_argument("--TRAIN_SNAPSHOT_INTERVAL",
                         type=int,
-                        default=50,
+                        default=10,
                         help="Snapshot interval")
     parser.add_argument("--TRAIN_COEFF_KL",
                         type=float,

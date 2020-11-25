@@ -23,7 +23,7 @@ print("__"*80)
 
 class CUBDataset(torch.utils.data.Dataset):
     def __init__(self, pickl_file, img_dir, bert_emb=None, cnn_emb=None):
-        self.file_names = pd.read_pickle(pickl_file)[:10]
+        self.file_names = pd.read_pickle(pickl_file)[:-23]
         self.img_dir = img_dir
         self.bert_emb = bert_emb
         if cnn_emb is not None:
