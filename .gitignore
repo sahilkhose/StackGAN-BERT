@@ -1,7 +1,7 @@
 # input data and models 
 input/data/*
 output/
-old_output/
+old_outputs/
 
 
 # data files
