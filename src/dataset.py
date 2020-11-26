@@ -22,7 +22,7 @@ print("__"*80)
 
 
 class CUBDataset(torch.utils.data.Dataset):
-    def __init__(self, pickl_file, img_dir, bert_emb=None, cnn_emb=None):
+    def __init__(self, pickl_file, img_dir, bert_emb=None, cnn_emb=None, stage=1):
         self.file_names = pd.read_pickle(pickl_file)[:-23]
         self.img_dir = img_dir
         self.bert_emb = bert_emb
@@ -30,6 +30,7 @@ class CUBDataset(torch.utils.data.Dataset):
             self.cnn_emb = np.array(pickle.load(open(cnn_emb, "rb"), encoding='latin1'))  # to switch to cnn-rnn embeddings
         else:
             self.cnn_emb = cnn_emb
+        self.stage = stage
         self.f_to_bbox = dict_bbox()
 
     def __len__(self):
@@ -49,7 +50,10 @@ class CUBDataset(torch.utils.data.Dataset):
             text_emb = text_emb.squeeze(0)  # (768)
         
         bbox = self.f_to_bbox[data_id]
-        image = get_img(img_path=os.path.join(self.img_dir, data_id) + ".jpg", bbox=bbox, image_size=(64, 64))
+        if self.stage == 1:
+            image = get_img(img_path=os.path.join(self.img_dir, data_id) + ".jpg", bbox=bbox, image_size=(64, 64))
+        else:
+            image = get_img(img_path=os.path.join(self.img_dir, data_id) + ".jpg", bbox=bbox, image_size=(256, 256))
         # image = torch.tensor(np.array(image), dtype=torch.float)
         image = transforms.ToTensor()(image)
 

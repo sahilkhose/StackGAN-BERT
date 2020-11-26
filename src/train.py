@@ -93,10 +93,11 @@ def load_stage2(args):
         netG.load_state_dict(torch.load(args.NET_G_path))
         print("Generator loaded from: ", args.NET_G_path)
     elif args.STAGE1_G_path != "":
-        netG.Stage1_G.load_state_dict(torch.load(args.STAGE1_G_path))
-        print("Generator loaded from: ", args.STAGE1_G_path)
+        netG.stage1_gen.load_state_dict(torch.load(args.STAGE1_G_path))
+        print("Generator 1 loaded from: ", args.STAGE1_G_path)
     else:
         print("Please give the Stage 1 generator path")
+        return
     
     if args.NET_D_path != "":
         netD.load_state_dict(torch.load(args.NET_D_path))
@@ -153,11 +154,11 @@ def run(args):
     count = 0
 
     if args.embedding_type == "bert":
-        training_set = dataset.CUBDataset(pickl_file=args.train_filenames, img_dir=args.images_dir, bert_emb=args.bert_annotations_dir)
-        testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, img_dir=args.images_dir, bert_emb=args.bert_annotations_dir)
+        training_set = dataset.CUBDataset(pickl_file=args.train_filenames, img_dir=args.images_dir, bert_emb=args.bert_annotations_dir, stage=args.STAGE)
+        testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, img_dir=args.images_dir, bert_emb=args.bert_annotations_dir, stage=args.STAGE)
     else:
-        training_set = dataset.CUBDataset(pickl_file=args.train_filenames, img_dir=args.images_dir, cnn_emb=args.cnn_annotations_emb_train)
-        testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, img_dir=args.images_dir, cnn_emb=args.cnn_annotations_emb_test)
+        training_set = dataset.CUBDataset(pickl_file=args.train_filenames, img_dir=args.images_dir, cnn_emb=args.cnn_annotations_emb_train, stage=args.STAGE)
+        testing_set = dataset.CUBDataset(pickl_file=args.test_filenames, img_dir=args.images_dir, cnn_emb=args.cnn_annotations_emb_test, stage=args.STAGE)
     train_data_loader = torch.utils.data.DataLoader(training_set, batch_size=args.train_bs, num_workers=args.train_workers)
     test_data_loader = torch.utils.data.DataLoader(testing_set, batch_size=args.test_bs, num_workers=args.test_workers)
     # util.check_dataset(training_set)

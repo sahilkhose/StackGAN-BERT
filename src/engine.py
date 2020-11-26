@@ -73,7 +73,7 @@ def train_new_fn(data_loader, args, netG, netD, real_labels, fake_labels, noise,
 
         count += 1
 
-        if batch_id % 100 == 0:
+        if batch_id % 10 == 0:
             summary_D = summary.scalar("D_loss", errD.data)
             summary_D_r = summary.scalar("D_loss_real", errD_real.data)
             summary_D_w = summary.scalar("D_loss_wrong", errD_wrong.data)
