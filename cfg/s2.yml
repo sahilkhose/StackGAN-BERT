@@ -1,0 +1,7 @@
+CONFIG_NAME: "stage2"
+STAGE: 2
+train_bs: 2
+embedding_type: "bert"
+TRAIN_MAX_EPOCH: 100
+TRAIN_SNAPSHOT_INTERVAL: 5
+STAGE1_G_path: "../old_outputs/output_0/model/netG_epoch_120.pth"

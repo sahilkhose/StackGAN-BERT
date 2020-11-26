@@ -1,5 +1,6 @@
 CONFIG_NAME: "stage1"
-# train_bs: 4
-embedding_type: "cnn-rnn"
-# embedding_type: "bert"
+STAGE: 1
+train_bs: 128
+embedding_type: "bert" # cnn-rnn
 TRAIN_MAX_EPOCH: 6
+TRAIN_SNAPSHOT_INTERVAL: 10

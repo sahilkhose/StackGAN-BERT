@@ -68,15 +68,15 @@ def add_train_args(parser):
                         help="Discriminator model loading path")
     parser.add_argument("--STAGE1_G_path",
                         type=str,
-                        default="",
+                        default="../old_outputs/output_0/model/netG_epoch_120.pth",
                         help="Stage 1 Generator model path for Stage 2 training")
     parser.add_argument("--train_bs",
                         type=int,
-                        default=128,
+                        default=2,
                         help="train batch size")
     parser.add_argument("--test_bs",
                         type=int,
-                        default=4,
+                        default=1,
                         help="test batch size")
     parser.add_argument("--train_workers",
                         type=int,
@@ -104,7 +104,7 @@ def add_train_args(parser):
                         help="train maximum epochs")
     parser.add_argument("--TRAIN_SNAPSHOT_INTERVAL",
                         type=int,
-                        default=10,
+                        default=5,
                         help="Snapshot interval")
     parser.add_argument("--TRAIN_COEFF_KL",
                         type=float,
@@ -140,7 +140,7 @@ def add_train_args(parser):
                         help="")
     parser.add_argument("--STAGE",
                         type=int,
-                        default=1,
+                        default=2,
                         help="Stage to train/eval (1/2)")
     parser.add_argument("--device",
                         type=str,
