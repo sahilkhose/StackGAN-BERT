@@ -4,4 +4,6 @@ train_bs: 2
 embedding_type: "bert"
 TRAIN_MAX_EPOCH: 100
 TRAIN_SNAPSHOT_INTERVAL: 5
-STAGE1_G_path: "../old_outputs/output_0/model/netG_epoch_120.pth"
+STAGE1_G_path: "../old_outputs/output_1_0/model/netG_epoch_120.pth"
+NET_G_path: "../old_outputs/output_2_0/model/netG_epoch_0.pth"
+NET_D_path: "../old_outputs/output_2_0/model/netG_epoch_0.pth"
