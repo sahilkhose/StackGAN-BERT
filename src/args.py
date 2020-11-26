@@ -17,7 +17,7 @@ def get_all_args():
 
 def print_args(args):
     print("__"*80)
-    print(f'Args: {dumps(vars(args), indent=4, sort_keys=True)}')
+    print(f'ARGUMENTS: \n{dumps(vars(args), indent=4, sort_keys=True)}')
     print("__"*80)
 
 

@@ -1,8 +1,12 @@
 CONFIG_NAME: "stage1"
 STAGE: 1
 train_bs: 128
+train_workers: 4
 embedding_type: "bert" # cnn-rnn
-TRAIN_MAX_EPOCH: 120
+TRAIN_MAX_EPOCH: 600
+TRAIN_LR_DECAY_EPOCH: 100
 TRAIN_SNAPSHOT_INTERVAL: 10
-NET_G_path: "../old_outputs/output_1_0/model/netG_epoch_120.pth"
-NET_D_path: "../old_outputs/output_1_0/model/netD_epoch_120.pth"
+NET_G_path: ""
+NET_D_path: ""
+# NET_G_path: "../old_outputs/output_1_0/model/netG_epoch_120.pth"
+# NET_D_path: "../old_outputs/output_1_0/model/netD_epoch_120.pth"

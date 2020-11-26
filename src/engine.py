@@ -108,7 +108,7 @@ def train_new_fn(data_loader, args, netG, netD, real_labels, fake_labels, noise,
     errG_ /= len(data_loader)
     kl_loss_ /= len(data_loader)
 
-    return errD_, errD_real_, errD_wrong_, errD_fake_, errG_, kl_loss_
+    return errD_, errD_real_, errD_wrong_, errD_fake_, errG_, kl_loss_, count
 
 
 

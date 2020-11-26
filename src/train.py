@@ -55,10 +55,14 @@ def load_stage1(args):
     #* Load saved model:
     if args.NET_G_path != "":
         netG.load_state_dict(torch.load(args.NET_G_path))
+        print("__"*80)
         print("Generator loaded from: ", args.NET_G_path)
+        print("__"*80)
     if args.NET_D_path != "":
         netD.load_state_dict(torch.load(args.NET_D_path))
+        print("__"*80)
         print("Discriminator loaded from: ", args.NET_D_path)
+        print("__"*80)
 
     #* Load on device:
     if args.device == "cuda":
@@ -66,8 +70,10 @@ def load_stage1(args):
         netD.cuda()
 
     print("__"*80)
+    print("GENERATOR:")
     print(netG)
     print("__"*80)
+    print("DISCRIMINATOR:")
     print(netD)
     print("__"*80)
 
@@ -172,7 +178,7 @@ def run(args):
     util.make_dir(args.log_dir)
     summary_writer = FileWriter(args.log_dir)
 
-    for epoch in range(args.TRAIN_MAX_EPOCH):
+    for epoch in range(1, args.TRAIN_MAX_EPOCH+1):
         print("__"*80)
         start_t = time.time()
 
@@ -184,14 +190,14 @@ def run(args):
             for param_group in optimizerD.param_groups:
                 param_group["lr"] = disc_lr
         
-        errD, errD_real, errD_wrong, errD_fake, errG, kl_loss = engine.train_new_fn(
+        errD, errD_real, errD_wrong, errD_fake, errG, kl_loss, count = engine.train_new_fn(
             train_data_loader, args, netG, netD, real_labels, fake_labels, 
             noise, fixed_noise,  optimizerD, optimizerG, epoch, count, summary_writer)
         
         end_t = time.time()
         
         print(f"[{epoch}/{args.TRAIN_MAX_EPOCH}] Loss_D: {errD:.4f}, Loss_G: {errG:.4f}, Loss_KL: {kl_loss:.4f}, Loss_real: {errD_real:.4f}, Loss_wrong: {errD_wrong:.4f}, Loss_fake: {errD_fake:.4f}, Total Time: {end_t-start_t :.2f} sec")
-        if epoch % args.TRAIN_SNAPSHOT_INTERVAL == 0:
+        if epoch % args.TRAIN_SNAPSHOT_INTERVAL == 0 or epoch == 1:
             util.save_model(netG, netD, epoch, args)
     
     util.save_model(netG, netD, args.TRAIN_MAX_EPOCH, args)
