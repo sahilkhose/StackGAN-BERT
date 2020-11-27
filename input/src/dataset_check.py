@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import pickle
 import torch
 
+from PIL import Image
 from scipy.spatial.distance import cosine
 from tqdm import tqdm
 print("__"*80)
@@ -82,12 +83,56 @@ def compare_embedding_quality(emb_idx_1=0, emb_idx_2=1, emb_no=0):
     plt.imshow(plt.imread(os.path.join(config.IMAGE_DIR, file_1 + ".jpg")))
     fig.add_subplot(1, 2, 2)
     plt.imshow(plt.imread(os.path.join(config.IMAGE_DIR, file_2 + ".jpg")))
-    plt.show()
+    # plt.show()
+
+def check_model(file_idx, model):
+    import sys
+    sys.path.insert(1, "../../src/")
+    import layers
+    emb_no = 0
+    ###* load the models
+    netG = layers.Stage1Generator().cuda()
+    netG.load_state_dict(torch.load(model))
+    netG.eval()
+    with torch.no_grad():
+        ###* load the embeddings
+        filenames = np.array(pickle.load(open("../data/birds/train/filenames.pickle", "rb"), encoding='latin1'))
+        file_name = filenames[file_idx]
+        emb = torch.load(os.path.join(config.ANNOTATION_EMB, file_name, f"{emb_no}.pt"))
+
+        ###* Forward pass
+        print(emb.shape)  # (1, 768)
+        noise = torch.autograd.Variable(torch.FloatTensor(1, 100)).cuda()
+        noise.data.normal_(0, 1)
+        _, fake_image, mu, logvar = netG(emb, noise)
+        fake_image = fake_image.squeeze(0)
+        print(fake_image.shape)  #(3, 64, 64)
+
+        im_save(fake_image, count=0)
+    return fake_image
+
+def im_save(fake_img, count=0):
+    save_name = f"{count}.png"  
+    im = fake_img.cpu().numpy()
+    im = (im + 1.0) * 127.5
+    im = im.astype(np.uint8)
+    # print("im", im.shape)
+    im = np.transpose(im, (1, 2, 0))
+    # print("im", im.shape)
+    im = Image.fromarray(im)
+    im.save(save_name)
 
 if __name__ == "__main__":
     # display_specific(bird_type_no=0, file_no=0)  # old method
-    display_specific(file_idx=0)  # new method
+    # display_specific(file_idx=0)  # new method
 
     print("__"*80)
-    compare_embedding_quality(emb_idx_1=0, emb_idx_2=1, emb_no=0)
+    # compare_embedding_quality(emb_idx_1=0, emb_idx_2=1, emb_no=0)
     ###* emb_idx < 8855, emb_no < 10
+
+
+    print("__"*80)
+    check_model(file_idx=143,
+                model="../../output/model/netG_epoch_480.pth")
+
+    plt.show()

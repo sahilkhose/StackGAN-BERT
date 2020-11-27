@@ -2,6 +2,7 @@
 input/data/*
 output/
 old_outputs/
+*.tar
 
 
 # data files
