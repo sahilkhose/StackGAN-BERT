@@ -3,9 +3,9 @@ STAGE: 1
 train_bs: 128
 train_workers: 4
 embedding_type: "bert" # cnn-rnn
-TRAIN_MAX_EPOCH: 450
+TRAIN_MAX_EPOCH: 50
 TRAIN_GEN_LR: 0.0001 # 1e-4
-TRAIN_DISC_LR: 0.00005 # 5e-5
+TRAIN_DISC_LR: 0.00002 # 5e-5
 TRAIN_LR_DECAY_EPOCH: 30
 TRAIN_SNAPSHOT_INTERVAL: 10
 NET_G_path: ""
