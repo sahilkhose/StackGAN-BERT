@@ -124,7 +124,7 @@ def im_save(fake_img, count=0):
 
 if __name__ == "__main__":
     # display_specific(bird_type_no=0, file_no=0)  # old method
-    # display_specific(file_idx=0)  # new method
+    display_specific(file_idx=14)  # new method
 
     print("__"*80)
     # compare_embedding_quality(emb_idx_1=0, emb_idx_2=1, emb_no=0)
@@ -132,7 +132,7 @@ if __name__ == "__main__":
 
 
     print("__"*80)
-    check_model(file_idx=143,
-                model="../../output/model/netG_epoch_480.pth")
+    check_model(file_idx=14,
+                model="../../old_outputs/output-3/model/netG_epoch_110.pth")
 
     plt.show()

@@ -29,3 +29,20 @@ $ mv ../output ../old_outputs/output_1
 # To open tensorboard
 $ tensorboard --logdir=../output 
 ```
+
+### TODO:
+
+- [ ] Clean the code and document code + README.md
+- [ ] Check for bugs
+- [ ] Try overfitting stage-1 
+- [ ] Try overfitting stage-2
+- [ ] Train stage-1 locally
+- [ ] Figure out the training by searching for loss OR
+- [ ] Clone the repo and compare stage-1 results (make a script to do this)
+- [ ] Train stage-2
+- [ ] Upload bert embeddings
+- [ ] Make repo public
+
+### After public:
+- [ ] Compare different embeddings (cnn-rnn, skip, bert)
+- [ ] Document the training process  
