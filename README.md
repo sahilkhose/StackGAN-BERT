@@ -1,12 +1,16 @@
 # ganctober
 
+### STAGE 1 TRAINED:
+[Stage 1 trained output with models](https://drive.google.com/drive/folders/14AyNcu7oZJe2aMevynAbYIpMKN7I3yHT?usp=sharing)
+
+
 ### TODO:
 
 - [ ] Clean the code and document code + README.md
 - [ ] Check for bugs
 - [ ] Try overfitting stage-1 
 - [ ] Try overfitting stage-2
-- [ ] Train stage-1 locally
+- [x] Train stage-1 locally
 - [ ] Figure out the training by searching for loss OR
 - [ ] Clone the repo and compare stage-1 results (make a script to do this)
 - [ ] Train stage-2
