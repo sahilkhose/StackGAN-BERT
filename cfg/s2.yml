@@ -1,11 +1,15 @@
 CONFIG_NAME: "stage2"
 STAGE: 2
-train_bs: 2
+train_bs: 64
 train_workers: 1
 embedding_type: "bert"
-TRAIN_MAX_EPOCH: 100
+TRAIN_MAX_EPOCH: 1200
+TRAIN_GEN_LR: 0.0002 # 2e-4
+TRAIN_DISC_LR: 0.0002 # 2e-4
 TRAIN_LR_DECAY_EPOCH: 10
-TRAIN_SNAPSHOT_INTERVAL: 5
-STAGE1_G_path: "../old_outputs/output_1_0/model/netG_epoch_120.pth"
-NET_G_path: "../old_outputs/output_2_0/model/netG_epoch_0.pth"
-NET_D_path: "../old_outputs/output_2_0/model/netG_epoch_0.pth"
+TRAIN_SNAPSHOT_INTERVAL: 10 # 2000
+STAGE1_G_path: "../old_outputs/output-stage1/model/netG_epoch_600.pth"
+NET_G_path: ""
+NET_D_path: ""
+
+pretrained_epoch: 600
