@@ -1,6 +1,6 @@
 CONFIG_NAME: "stage2"
 STAGE: 2
-train_bs: 64
+train_bs: 4 # 64
 train_workers: 1
 embedding_type: "bert"
 TRAIN_MAX_EPOCH: 1200
