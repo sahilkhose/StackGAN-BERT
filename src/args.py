@@ -24,7 +24,7 @@ def print_args(args):
 def parse_args(parser):
     args = parser.parse_args()
     if args.config_file:
-        data = yaml.load(args.config_file, Loader=yaml.FullLoader)
+        data = yaml.load(args.config_file, Loader=yaml.Loader)
         delattr(args, "config_file")
         arg_dict = args.__dict__
         for key, value in data.items():
@@ -120,19 +120,19 @@ def add_train_args(parser):
                         help="bert/cnn-rnn: embedding type")
     parser.add_argument("--datapath",
                         type=str,
-                        default="../output",
+                        default="/gdrive/MyDrive/ganctober_training/output",
                         help="datapath dir")
     parser.add_argument("--image_save_dir",
                         type=str,
-                        default="../output/image/",
+                        default="/gdrive/MyDrive/ganctober_training/output/image/",
                         help="Image save dir")
     parser.add_argument("--model_dir",
                         type=str,
-                        default="../output/model/",
+                        default="/gdrive/MyDrive/ganctober_training/output/model/",
                         help="Model save dir")
     parser.add_argument("--log_dir",
                         type=str,
-                        default="../output/log/",
+                        default="/gdrive/MyDrive/ganctober_training/output/log/",
                         help="Log dir for tensorboard")
     parser.add_argument("--VIS_COUNT",
                         type=int,
