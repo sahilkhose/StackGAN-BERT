@@ -16,9 +16,9 @@ print("__"*80)
 print("Imports finished.")
 print("Loading BERT Tokenizer and model...")
 ###############################################################################################
-tokenizer = BertTokenizer.from_pretrained(config.BERT_PATH, do_lower_case=True)
+tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True)
 model = BertModel.from_pretrained(
-    config.BERT_PATH, output_hidden_states=True).to(config.DEVICE)
+    "bert-base-uncased", output_hidden_states=True).to(config.DEVICE)
 model.eval()
 ###############################################################################################
 print("BERT tokenizer and model loaded.")
