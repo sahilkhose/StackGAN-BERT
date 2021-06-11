@@ -3,27 +3,29 @@
 - PyTorch implementation of the paper [StackGAN: Text to Photo-realistic Image Synthesis with Stacked Generative Adversarial Networks](https://arxiv.org/pdf/1612.03242v1.pdf) by Han Zhang, Tao Xu, Hongsheng Li, Shaoting Zhang, Xiaogang Wang,   Xiaolei Huang, Dimitris Metaxas.
 
 ## :bulb: What's new?
-- We use BERT embeddings for the text description instead of the char-CNN-RNN text embeddings that was used in the paper implementation.
+- We use BERT embeddings for the text description instead of the char-CNN-RNN text embeddings that were used in the paper implementation.
 <img src="examples/framework.jpg" width="850px" height="370px"/>
 
 ## Pretrained model
 - [Stage 1](https://drive.google.com/drive/folders/14AyNcu7oZJe2aMevynAbYIpMKN7I3yHT?usp=sharing) trained using BERT embeddings instead of the orignal char-CNN-RNN text embeddings
 
 ## Paper examples
-### :bird: Examples for birds (char-CNN-RNN embeddings), more on [youtube](https://youtu.be/93yaf_kE0Fg):
+#### :bird: Examples for birds (char-CNN-RNN embeddings), more on [youtube](https://youtu.be/93yaf_kE0Fg):
 ![](examples/bird1.jpg) <br>
 ![](examples/bird2.jpg) <br>
 ![](examples/bird4.jpg) <br>
 ![](examples/bird3.jpg) <br>
 
 --------------------------------------------------------------------------------------------
-### :sunflower: Examples for flowers (char-CNN-RNN embeddings), more on [youtube](https://youtu.be/SuRyL5vhCIM):
+
+#### :sunflower: Examples for flowers (char-CNN-RNN embeddings), more on [youtube](https://youtu.be/SuRyL5vhCIM):
 ![](examples/flower1.jpg) <br>
 ![](examples/flower2.jpg) <br>
 ![](examples/flower3.jpg) <br>
 ![](examples/flower4.jpg) <br>
 
 --------------------------------------------------------------------------------------------
+
 ## Dataset
 Check instructions in `/input/README.md`
 
@@ -37,11 +39,11 @@ python3 bert_emb.py
 ```bash
 cd src
 ```
-Option 1: CLI args training (`src/args.py`)
+Option 1: CLI args training `src/args.py`
 ```bash
 python3 train.py --TRAIN_MAX_EPOCH 10 
 ```
-Option 2: yaml args training (`cfg/s1.yml` and `cfg/s2.yml`)
+Option 2: yaml args training `cfg/s1.yml` and `cfg/s2.yml`
 ```bash
 python3 train.py --conf ../cfg/s1.yml
 
@@ -58,6 +60,7 @@ tensorboard --logdir=../output
 ```
 
 --------------------------------------------------------------------------------------------
+
 ## :books: Citing StackGAN
 If you find StackGAN useful in your research, please consider citing:
 
