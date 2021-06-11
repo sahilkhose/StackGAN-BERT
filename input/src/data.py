@@ -84,7 +84,7 @@ def main():
 	dl_b = GoogleDriveDownloader(url_b, '../data/')
 	dl_b.download()
 
-	os.system("../data/birds.zip -d ../data/")
+	os.system("unzip ../data/birds.zip -d ../data/")
 	os.system("tar -xvf ../data/CUB_200_2011.tgz -C ../data/")
 
 
