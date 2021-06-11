@@ -1,6 +1,8 @@
 # StackGAN
 
 - PyTorch implementation of the paper [StackGAN: Text to Photo-realistic Image Synthesis with Stacked Generative Adversarial Networks](https://arxiv.org/pdf/1612.03242v1.pdf) by Han Zhang, Tao Xu, Hongsheng Li, Shaoting Zhang, Xiaogang Wang,   Xiaolei Huang, Dimitris Metaxas.
+
+## :bulb: What's new?
 - We use BERT embeddings for the text description instead of the char-CNN-RNN text embeddings that was used in the paper implementation.
 <img src="examples/framework.jpg" width="850px" height="370px"/>
 
@@ -41,6 +43,7 @@ Examples for flowers (char-CNN-RNN embeddings), more on [youtube](https://youtu.
 ![](examples/flower3.jpg) <br>
 ![](examples/flower4.jpg) <br>
 
+--------------------------------------------------------------------------------------------
 ## Dataset
 Check README.md in `/input`
 
@@ -50,7 +53,7 @@ cd input/src
 python3 bert_emb.py  
 ```
 
-### Training
+### :wrench: Training
 ```bash
 cd src
 ```
@@ -74,8 +77,8 @@ To load the tensorboard
 tensorboard --logdir=../output 
 ```
 
-
-### Citing StackGAN
+--------------------------------------------------------------------------------------------
+### :books: Citing StackGAN
 If you find StackGAN useful in your research, please consider citing:
 
 ```
