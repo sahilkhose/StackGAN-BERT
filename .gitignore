@@ -3,13 +3,13 @@ input/data/*
 output/
 old_outputs/
 *.tar
-!requirements.txt
 
 # data files
 *.csv
 *.pt
 *.npy
 *.txt
+!requirements.txt
 *.h5
 *.pkl
 *.pth
