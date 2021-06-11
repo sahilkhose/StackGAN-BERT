@@ -77,15 +77,15 @@ class GoogleDriveDownloader(object):
 def main():
 	os.makedirs("../data/", exist_ok=True)
 	url = 'http://www.vision.caltech.edu/visipedia-data/CUB-200-2011/CUB_200_2011.tgz'
-	dl = GoogleDriveDownloader(url, '../input/data/')
+	dl = GoogleDriveDownloader(url, '../data/')
 	dl.download()
 
 	url_b = 'https://drive.google.com/file/d/1eSNTBVkS_xLNVpOKyNeiLmX_3JPVEJqz/view?usp=sharing/birds.zip'
-	dl_b = GoogleDriveDownloader(url_b, '../input/data/')
+	dl_b = GoogleDriveDownloader(url_b, '../data/')
 	dl_b.download()
 
-	os.system("../input/data/birds.zip -d ../input/data/")
-	os.system("tar -xvf ../input/data/CUB_200_2011.tgz -C ../input/data/")
+	os.system("../input/data/birds.zip -d ../data/")
+	os.system("tar -xvf ../data/CUB_200_2011.tgz -C ../data/")
 
 
 

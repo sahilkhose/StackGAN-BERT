@@ -29,7 +29,7 @@
 ## :clipboard: Dependencies
 ```bash
 git clone https://github.com/sahilkhose/StackGAN-BERT.git
-pip3 install requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ## Dataset
