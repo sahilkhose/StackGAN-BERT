@@ -9,35 +9,15 @@
 ## Pretrained model
 - [Stage 1](https://drive.google.com/drive/folders/14AyNcu7oZJe2aMevynAbYIpMKN7I3yHT?usp=sharing) trained using BERT embeddings instead of the orignal char-CNN-RNN text embeddings
 
-
-<!-- ### TODO:
-
-- [ ] Clean the code and document code + README.md
-- [ ] Check for bugs
-- [ ] Try overfitting stage-1 
-- [ ] Try overfitting stage-2
-- [x] Train stage-1 locally
-- [ ] Figure out the training by searching for loss OR
-- [ ] Clone the repo and compare stage-1 results (make a script to do this)
-- [ ] Train stage-2
-- [ ] Upload bert embeddings
-- [ ] Make repo public
-
-### After public:
-- [ ] Compare different embeddings (cnn-rnn, skip, bert)
-- [ ] Document the training process  
-
- -->
-
 ## Paper examples
-Examples for birds (char-CNN-RNN embeddings), more on [youtube](https://youtu.be/93yaf_kE0Fg):
+### :bird: Examples for birds (char-CNN-RNN embeddings), more on [youtube](https://youtu.be/93yaf_kE0Fg):
 ![](examples/bird1.jpg) <br>
 ![](examples/bird2.jpg) <br>
 ![](examples/bird4.jpg) <br>
 ![](examples/bird3.jpg) <br>
 
 --------------------------------------------------------------------------------------------
-Examples for flowers (char-CNN-RNN embeddings), more on [youtube](https://youtu.be/SuRyL5vhCIM):
+### :sunflower: Examples for flowers (char-CNN-RNN embeddings), more on [youtube](https://youtu.be/SuRyL5vhCIM):
 ![](examples/flower1.jpg) <br>
 ![](examples/flower2.jpg) <br>
 ![](examples/flower3.jpg) <br>
@@ -45,7 +25,7 @@ Examples for flowers (char-CNN-RNN embeddings), more on [youtube](https://youtu.
 
 --------------------------------------------------------------------------------------------
 ## Dataset
-Check README.md in `/input`
+Check instructions in `/input/README.md`
 
 ## Generating BERT embeddings of annotations
 ```bash
@@ -53,15 +33,15 @@ cd input/src
 python3 bert_emb.py  
 ```
 
-### :wrench: Training
+## :wrench: Training
 ```bash
 cd src
 ```
-Option 1: CLI args training (src/args.py)
+Option 1: CLI args training (`src/args.py`)
 ```bash
 python3 train.py --TRAIN_MAX_EPOCH 10 
 ```
-Option 2: yaml args training (cfg/s1.yml and cfg/s2.yml)
+Option 2: yaml args training (`cfg/s1.yml` and `cfg/s2.yml`)
 ```bash
 python3 train.py --conf ../cfg/s1.yml
 
@@ -78,7 +58,7 @@ tensorboard --logdir=../output
 ```
 
 --------------------------------------------------------------------------------------------
-### :books: Citing StackGAN
+## :books: Citing StackGAN
 If you find StackGAN useful in your research, please consider citing:
 
 ```
