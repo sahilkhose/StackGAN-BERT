@@ -9,17 +9,26 @@ import torch
 import logging
 logging.basicConfig(level=logging.ERROR)
 
-from transformers import BertTokenizer, BertModel
+# from transformers import BertTokenizer, BertModel
+from transformers import AutoTokenizer, AutoModelForMaskedLM
 from tqdm import tqdm
 
 print("__"*80)
 print("Imports finished.")
 print("Loading BERT Tokenizer and model...")
 ###############################################################################################
-tokenizer = BertTokenizer.from_pretrained(config.BERT_PATH, do_lower_case=True)
-model = BertModel.from_pretrained(
-    config.BERT_PATH, output_hidden_states=True).to(config.DEVICE)
+# tokenizer = BertTokenizer.from_pretrained(config.BERT_PATH, do_lower_case=True)
+# model = BertModel.from_pretrained(
+#     config.BERT_PATH, output_hidden_states=True).to(config.DEVICE)
+
+
+  
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True)
+
+model = AutoModelForMaskedLM.from_pretrained("bert-base-uncased", output_hidden_states=True).to(config.DEVICE)
+
 model.eval()
+
 ###############################################################################################
 print("BERT tokenizer and model loaded.")
 

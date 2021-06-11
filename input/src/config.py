@@ -3,7 +3,7 @@ All the paths and arguments.
 '''
 # import transformers
 
-BERT_PATH = "../data/bert_base_uncased"
+# BERT_PATH = "../data/bert_base_uncased"
 ANNOTATIONS = "../data/birds/text_c10"
 ANNOTATION_EMB = "../data/birds/embeddings"
 IMAGE_DIR = "../data/CUB_200_2011/images"

@@ -1,8 +1,8 @@
 CONFIG_NAME: "stage1"
 STAGE: 1
-train_bs: 64  # 128 fits
+train_bs: 128  # 128 fits / 64 standard
 train_workers: 4
-embedding_type: "bert" # cnn-rnn
+embedding_type: "bert" # cnn-rnn  / bert
 TRAIN_MAX_EPOCH: 600
 TRAIN_GEN_LR: 0.0002 # 2e-4
 TRAIN_DISC_LR: 0.0002 # 2e-4
