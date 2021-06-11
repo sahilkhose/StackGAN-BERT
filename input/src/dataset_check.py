@@ -1,6 +1,9 @@
-'''
-Displays the 10 annotations and the corresponding picture.
-'''
+"""Displays the 10 annotations and the corresponding picture.
+
+Authors:
+    Abhiraj Tiwari (abhirajtiwari@gmail.com)
+    Sahil Khose (sahilkhose18@gmail.com)
+"""
 import config 
 
 import numpy as np 

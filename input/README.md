@@ -30,7 +30,6 @@ ganctober
 |       |   config.py
 |       |   data.py
 |       |   dataset_check.py
-|       |   setup.py
 |
 |
 └──>old_outputs

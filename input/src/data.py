@@ -1,3 +1,9 @@
+"""Downloads data
+
+Authors:
+    Abhiraj Tiwari (abhirajtiwari@gmail.com)
+    Sahil Khose (sahilkhose18@gmail.com)
+"""
 import requests
 import os
 import tqdm

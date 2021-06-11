@@ -1,6 +1,9 @@
-'''
-All the paths and arguments.
-'''
+"""All the paths and arguments.
+
+Authors:
+    Abhiraj Tiwari (abhirajtiwari@gmail.com)
+    Sahil Khose (sahilkhose18@gmail.com)
+"""
 # import transformers
 
 # BERT_PATH = "../data/bert_base_uncased"
