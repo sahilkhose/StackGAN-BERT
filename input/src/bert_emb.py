@@ -17,14 +17,12 @@ print("__"*80)
 print("Imports finished.")
 print("Loading BERT Tokenizer and model...")
 ###############################################################################################
-<<<<<<< HEAD
 # tokenizer = BertTokenizer.from_pretrained(config.BERT_PATH, do_lower_case=True)
 # model = BertModel.from_pretrained(
 #     config.BERT_PATH, output_hidden_states=True).to(config.DEVICE)
 
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True)
 model = AutoModelForMaskedLM.from_pretrained("bert-base-uncased", output_hidden_states=True).to(config.DEVICE)
->>>>>>> e267201dad6029a2df8b633ecc15d59651cea9d2
 model.eval()
 
 ###############################################################################################
