@@ -40,6 +40,7 @@ python3 data.py
 ```
 
 ## Generating BERT embeddings of annotations
+Change the DEVICE to `cpu` in `input/src/config.py` if `cuda` is not available
 ```bash
 python3 bert_emb.py  
 ```
