@@ -26,18 +26,26 @@
 
 --------------------------------------------------------------------------------------------
 
+## :clipboard: Dependencies
+```bash
+pip3 install requirements.txt
+```
+
 ## Dataset
 Check instructions in `/input/README.md`
+```bash
+cd input/src
+python3 data.py
+```
 
 ## Generating BERT embeddings of annotations
 ```bash
-cd input/src
 python3 bert_emb.py  
 ```
 
 ## :wrench: Training
 ```bash
-cd src
+cd ../../src
 ```
 Option 1: CLI args training `src/args.py`
 ```bash

@@ -8,6 +8,11 @@ python3 data.py
 ganctober
 │   LICENSE
 │   README.md   
+│	requirements.txt
+│
+└──>cfg
+│
+└──>examples
 │
 └──>input
 │   │
@@ -23,20 +28,23 @@ ganctober
 │   └──>src
 |       |   bert_emb.py
 |       |   config.py
+|       |   data.py
 |       |   dataset_check.py
 |       |   setup.py
 |
-└──>models
+|
+└──>old_outputs
+|
+└──>output
 |
 └──>src
-│   │   config.py
+│   │   args.py
 |   |   dataset.py
 │   │   engine.py
 │   │   environment.yml
 │   │   layers.py
-│   │   model.py
 │   │   train.py
-│   │   utils.py
+│   │   util.py
 ```
 --------------------------------------------------------------------------------------------
 
