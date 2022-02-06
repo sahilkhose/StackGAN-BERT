@@ -86,7 +86,7 @@ def main():
 	dl = GoogleDriveDownloader(url, '../data/')
 	dl.download()
 
-	url_b = 'https://drive.google.com/file/d/1eSNTBVkS_xLNVpOKyNeiLmX_3JPVEJqz/view?usp=sharing/birds.zip'
+	url_b = 'https://drive.google.com/file/d/1MVfYF0qVgKHTQKFdA7lexGWnRIs7Ax9c/view?usp=sharing'
 	dl_b = GoogleDriveDownloader(url_b, '../data/')
 	dl_b.download()
 
